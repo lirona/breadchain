@@ -19,8 +19,6 @@ import {Bread} from "bread-token/src/Bread.sol";
 contract YieldDistributor is OwnableUpgradeable {
     // @notice The error emitted when attempting to add a project that is already in the `projects` array
     error AlreadyMemberProject();
-    // @notice the error emitted when attemping to vote in the same cycle twice
-    error AlreadyVotedInCycle();
     // @notice The error emitted when a user attempts to vote without the minimum required voting power
     error BelowMinRequiredVotingPower();
     // @notice The error emitted when attempting to calculate voting power for a period that has not yet ended
@@ -75,6 +73,8 @@ contract YieldDistributor is OwnableUpgradeable {
     uint256[] public projectDistributions;
     // @notice The last block number in which a specified account cast a vote
     mapping(address => uint256) public accountLastVoted;
+    // @notice The voting power allocated to projects by voters in the current cycle
+    mapping(address => uint256[]) voterDistributions;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -224,8 +224,6 @@ contract YieldDistributor is OwnableUpgradeable {
      * @param _points List of points as integers for each project
      */
     function castVote(uint256[] calldata _points) public {
-        if (accountLastVoted[msg.sender] > lastClaimedBlockNumber) revert AlreadyVotedInCycle();
-
         uint256 _currentVotingPower = getCurrentVotingPower(msg.sender);
 
         if (_currentVotingPower < minRequiredVotingPower) revert BelowMinRequiredVotingPower();
@@ -243,20 +241,29 @@ contract YieldDistributor is OwnableUpgradeable {
         if (_points.length != projects.length) revert IncorrectNumberOfProjects();
 
         uint256 _totalPoints;
-
         for (uint256 i; i < _points.length; ++i) {
             if (_points[i] > maxPoints) revert ExceedsMaxPoints();
             _totalPoints += _points[i];
         }
-
         if (_totalPoints == 0) revert ZeroVotePoints();
 
+        bool _hasVotedInCycle = accountLastVoted[_account] > lastClaimedBlockNumber;
+        uint256[] storage _voterDistributions = voterDistributions[_account];
+        if (!_hasVotedInCycle) {
+            delete voterDistributions[_account];
+            currentVotes += _votingPower;
+        }
+
         for (uint256 i; i < _points.length; ++i) {
-            projectDistributions[i] += ((_points[i] * _votingPower * PRECISION) / _totalPoints) / PRECISION;
+            if (!_hasVotedInCycle) _voterDistributions.push(0);
+            else projectDistributions[i] -= _voterDistributions[i];
+
+            uint256 _currentProjectDistribution = ((_points[i] * _votingPower * PRECISION) / _totalPoints) / PRECISION;
+            projectDistributions[i] += _currentProjectDistribution;
+            _voterDistributions[i] = _currentProjectDistribution;
         }
 
         accountLastVoted[_account] = block.number;
-        currentVotes += _votingPower;
 
         emit BreadHolderVoted(_account, _points, projects);
     }
