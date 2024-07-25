@@ -75,6 +75,8 @@ contract YieldDistributor is OwnableUpgradeable {
     mapping(address => uint256) public accountLastVoted;
     // @notice The voting power allocated to projects by voters in the current cycle
     mapping(address => uint256[]) voterDistributions;
+    // @notice How much of the yield is divided equally among projects
+    uint256 public yieldFixedSplitDivisor;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -87,6 +89,7 @@ contract YieldDistributor is OwnableUpgradeable {
         uint256 _minRequiredVotingPower,
         uint256 _maxPoints,
         uint256 _cycleLength,
+        uint256 _yieldFixedSplitDivisor,
         uint256 _lastClaimedBlockNumber,
         address[] memory _projects
     ) public initializer {
@@ -97,6 +100,7 @@ contract YieldDistributor is OwnableUpgradeable {
         minRequiredVotingPower = _minRequiredVotingPower;
         maxPoints = _maxPoints;
         cycleLength = _cycleLength;
+        yieldFixedSplitDivisor = _yieldFixedSplitDivisor;
         lastClaimedBlockNumber = _lastClaimedBlockNumber;
 
         projectDistributions = new uint256[](_projects.length);
@@ -182,10 +186,11 @@ contract YieldDistributor is OwnableUpgradeable {
      * @return bytes Calldata used by the resolver to distribute the yield
      */
     function resolveYieldDistribution() public view returns (bool, bytes memory) {
+        uint256 _available_yield = BREAD.balanceOf(address(this)) + BREAD.yieldAccrued();
         if (
             currentVotes == 0 // No votes were cast
                 || block.number < lastClaimedBlockNumber + cycleLength // Already claimed this cycle
-                || BREAD.balanceOf(address(this)) + BREAD.yieldAccrued() < projects.length // Yield is insufficient
+                || _available_yield / yieldFixedSplitDivisor < projects.length // Yield is insufficient
         ) {
             return (false, new bytes(0));
         } else {
@@ -202,18 +207,19 @@ contract YieldDistributor is OwnableUpgradeable {
 
         BREAD.claimYield(BREAD.yieldAccrued(), address(this));
         lastClaimedBlockNumber = block.number;
-
-        uint256 _halfYield = BREAD.balanceOf(address(this)) / 2;
-        uint256 _baseSplit = _halfYield / projects.length;
+        uint256 balance = BREAD.balanceOf(address(this));
+        uint256 _fixedYield = balance / yieldFixedSplitDivisor;
+        uint256 _baseSplit = _fixedYield / projects.length;
+        uint256 _votedYield = balance - _fixedYield;
 
         for (uint256 i; i < projects.length; ++i) {
-            uint256 _votedSplit = ((projectDistributions[i] * _halfYield * PRECISION) / currentVotes) / PRECISION;
+            uint256 _votedSplit = ((projectDistributions[i] * _votedYield * PRECISION) / currentVotes) / PRECISION;
             BREAD.transfer(projects[i], _votedSplit + _baseSplit);
         }
 
         _updateBreadchainProjects();
 
-        emit YieldDistributed(_halfYield * 2, currentVotes, projectDistributions);
+        emit YieldDistributed(balance, currentVotes, projectDistributions);
 
         delete currentVotes;
         projectDistributions = new uint256[](projects.length);
@@ -375,5 +381,15 @@ contract YieldDistributor is OwnableUpgradeable {
         if (_cycleLength == 0) revert MustBeGreaterThanZero();
 
         cycleLength = _cycleLength;
+    }
+
+    /**
+     * @notice Set a new fixed split for the yield distribution
+     * @param _yieldFixedSplitDivisor New fixed split for the yield distribution
+     */
+    function setyieldFixedSplitDivisor(uint256 _yieldFixedSplitDivisor) public onlyOwner {
+        if (_yieldFixedSplitDivisor == 0) revert MustBeGreaterThanZero();
+
+        yieldFixedSplitDivisor = _yieldFixedSplitDivisor;
     }
 }

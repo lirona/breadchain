@@ -41,6 +41,7 @@ contract YieldDistributorTest is Test {
     uint256 _cycleLength = stdJson.readUint(config_data, "._cycleLength");
     uint256 _minHoldingDuration = stdJson.readUint(config_data, "._minHoldingDuration");
     uint256 _lastClaimedBlockNumber = stdJson.readUint(config_data, "._lastClaimedBlockNumber");
+    uint256 _yieldFixedSplitDivisor = stdJson.readUint(config_data, "._yieldFixedSplitDivisor");
     Bread public bread = Bread(address(_bread));
     uint256 minHoldingDurationInBlocks = _minHoldingDuration / _blocktime;
 
@@ -62,6 +63,7 @@ contract YieldDistributorTest is Test {
             _minRequiredVotingPower,
             _maxPoints,
             _cycleLength,
+            _yieldFixedSplitDivisor,
             _lastClaimedBlockNumber,
             projects1
         );
@@ -79,6 +81,7 @@ contract YieldDistributorTest is Test {
             _minRequiredVotingPower,
             _maxPoints,
             _cycleLength,
+            _yieldFixedSplitDivisor,
             _lastClaimedBlockNumber,
             projects2
         );
@@ -134,6 +137,41 @@ contract YieldDistributorTest is Test {
         // Getting the balance of the project after the distribution and checking if it similiar to the yield accrued (there may be rounding issues)
         uint256 bread_bal_after = bread.balanceOf(address(this));
         assertGt(bread_bal_after, yieldAccrued - marginOfError);
+    }
+
+    function test_fixed_yield_split() public {
+        // Getting the balance of the project before the distribution
+        uint256 bread_bal_before = bread.balanceOf(address(this));
+        assertEq(bread_bal_before, 0);
+        // Getting the amount of yield to be distributed
+        uint256 yieldAccrued = bread.yieldAccrued();
+
+        // Setting up a voter
+        address account = address(0x1234567890123456789012345678901234567890);
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+        setUpAccountsForVoting(accounts);
+
+        // Setting up for a cycle
+        setUpForCycle(yieldDistributor2);
+        address owner = yieldDistributor2.owner();
+        vm.prank(owner);
+        yieldDistributor2.setyieldFixedSplitDivisor(3);
+
+        // Casting vote and distributing yield
+        uint256 vote = 50;
+        uint256 vote2 = 50;
+        percentages.push(vote);
+        percentages.push(vote2);
+        vm.prank(account);
+        yieldDistributor2.castVote(percentages);
+        yieldDistributor2.distributeYield();
+        uint256 fixedSplit = yieldAccrued / _yieldFixedSplitDivisor;
+        uint256 votedSplit = yieldAccrued - fixedSplit;
+        uint256 projectsLength = yieldDistributor2.getProjectsLength();
+        // Getting the balance of the project after the distribution and checking if it similiar to the yield accrued (there may be rounding issues)
+        uint256 bread_bal_after = bread.balanceOf(address(secondProject));
+        assertGt(bread_bal_after, ((fixedSplit + votedSplit) / projectsLength) - marginOfError);
     }
 
     function test_simple_recast_vote() public {
