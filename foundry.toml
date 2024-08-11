@@ -8,8 +8,12 @@ build_info = true
 ffi = true
 ast = true
 extra_output = ["storageLayout"]
+
 [rpc_endpoints]
 sepolia = "QUICKNODE_ENDPOINT_URL"
+gnosis = "https://rpc.gnosis.gateway.fm"
+
 [fuzz]
 runs = 256
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
