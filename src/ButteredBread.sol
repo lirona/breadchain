@@ -69,6 +69,8 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         uint256 beforeBalance = accountToLPBalances[_account][_lp];
         accountToLPBalances[_account][_lp] = beforeBalance + _amount;
 
+        _mint(_account, _amount);
+
         emit AddButter(_account, _lp, _amount);
     }
 
@@ -78,6 +80,8 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
         accountToLPBalances[_account][_lp] = beforeBalance - _amount;
         IERC20(_lp).transfer(_account, _amount);
+
+        _burn(_account, _amount);
 
         emit RemoveButter(_account, _lp, _amount);
     }
