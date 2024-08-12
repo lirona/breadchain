@@ -176,12 +176,12 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
 
     function testBurnScalingFactor() public {
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
-        uint256 scaledMintAmount = depositAmount * XDAI_FACTOR;
+        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR;
 
         vm.prank(ALICE);
         bb.deposit(CURVE_POOL_XDAI_BREAD, depositAmount);
 
-        assertEq(bb.balanceOf(ALICE), scaledMintAmount);
+        assertEq(bb.balanceOf(ALICE), scaledBurnAmount);
 
         vm.prank(ALICE);
         bb.withdraw(CURVE_POOL_XDAI_BREAD, depositAmount);
@@ -189,7 +189,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         assertEq(bb.balanceOf(ALICE), 0);
     }
 
-    function testTransferRevert() public {
+    function testTransferRevertFuzzy(address _receiver) public {
         vm.startPrank(ALICE);
         bb.deposit(CURVE_POOL_XDAI_BREAD, curvePoolXdai.balanceOf(ALICE));
 
@@ -197,22 +197,82 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         assertGt(bbBalance, 0);
 
         vm.expectRevert();
-        bb.transfer(BOBBY, bbBalance);
+        bb.transfer(_receiver, bbBalance);
     }
 
-    function testTransferFromRevert() public {
+    function testTransferFromRevertFuzzy(address _operator, address _receiver) public {
         vm.startPrank(ALICE);
         bb.deposit(CURVE_POOL_XDAI_BREAD, curvePoolXdai.balanceOf(ALICE));
 
         uint256 bbBalance = bb.balanceOf(ALICE);
         assertGt(bbBalance, 0);
-        bb.approve(BOBBY, bbBalance);
+        bb.approve(_operator, bbBalance);
         vm.stopPrank();
 
-        vm.prank(BOBBY);
+        vm.prank(_operator);
         vm.expectRevert();
-        bb.transferFrom(ALICE, BOBBY, bbBalance);
+        bb.transferFrom(ALICE, _receiver, bbBalance);
     }
 }
 
-// contract ButteredBreadTest_Fuzz is ButteredBreadTest {}
+contract ButteredBreadTest_Fuzz is ButteredBreadTest {
+    struct Scenario {
+        uint256 deposit;
+        uint256 withdrawal;
+        uint256 factor;
+    }
+
+    modifier happyPath(Scenario memory _s) {
+        _s.factor = bound(_s.factor, 1, 500);
+        _s.deposit = bound(_s.deposit, 10 ether, 10_000 ether);
+        vm.assume(_s.withdrawal <= _s.deposit);
+
+        deal(CURVE_POOL_XDAI_BREAD, ALICE, _s.deposit);
+        vm.prank(ALICE);
+        curvePoolXdai.approve(address(bb), _s.deposit);
+
+        bb.modifyScalingFactor(CURVE_POOL_XDAI_BREAD, _s.factor);
+
+        assertEq(bb.scalingFactors(CURVE_POOL_XDAI_BREAD), _s.factor);
+        assertEq(bb.accountToLPBalances(ALICE, CURVE_POOL_XDAI_BREAD), 0);
+        assertEq(curvePoolXdai.balanceOf(ALICE), _s.deposit);
+        _;
+    }
+
+    function testDepositAndMint(Scenario memory _s) public happyPath(_s) {
+        vm.startPrank(ALICE);
+        bb.deposit(CURVE_POOL_XDAI_BREAD, _s.deposit);
+
+        assertEq(bb.balanceOf(ALICE), _s.deposit * _s.factor);
+        assertEq(bb.accountToLPBalances(ALICE, CURVE_POOL_XDAI_BREAD), _s.deposit);
+        assertEq(curvePoolXdai.balanceOf(ALICE), 0);
+    }
+
+    function testWithdrawAndBurn(Scenario memory _s) public happyPath(_s) {
+        vm.startPrank(ALICE);
+        bb.deposit(CURVE_POOL_XDAI_BREAD, _s.deposit);
+
+        assertEq(bb.accountToLPBalances(ALICE, CURVE_POOL_XDAI_BREAD), _s.deposit);
+        assertEq(curvePoolXdai.balanceOf(ALICE), 0);
+
+        uint256 preWithdrawBalance = bb.balanceOf(ALICE);
+        bb.withdraw(CURVE_POOL_XDAI_BREAD, _s.withdrawal);
+
+        assertEq(bb.balanceOf(ALICE), preWithdrawBalance - (_s.withdrawal * _s.factor));
+        assertEq(bb.accountToLPBalances(ALICE, CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
+        assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);
+    }
+
+    function testAccessControlForOwner(address _attacker, address _contract, bool _allow) public {
+        vm.assume(_attacker != address(this));
+        vm.prank(_attacker);
+        vm.expectRevert();
+        bb.modifyAllowList(_contract, _allow);
+    }
+
+    function testAccessControlOnNonExistent(address _contract) public {
+        vm.assume(_contract != CURVE_POOL_XDAI_BREAD);
+        vm.expectRevert();
+        bb.modifyScalingFactor(_contract, 69);
+    }
+}
