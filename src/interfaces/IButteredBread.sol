@@ -14,6 +14,7 @@ interface IButteredBread {
     /// @notice Occurs when attempting to transfer ButteredBread , a utility token for voting not meant for trading
     error NonTransferable();
 
+    /// @notice Specifics how much LP Token (Butter) has been added  
     event AddButter(address _account, address _lp, uint256 _amount);
     event RemoveButter(address _account, address _lp, uint256 _amount);
 
