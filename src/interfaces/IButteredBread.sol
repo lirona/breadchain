@@ -28,6 +28,7 @@ interface IButteredBread {
 
     function allowlistedLPs(address _lp) external view returns (bool _allowed);
 
+    /// @notice Returns the factor that determines how much ButteredBread should be minted for a Liquidity Pool token (Butter)
     function scalingFactors(address _lp) external view returns (uint256 _factor);
 
     /// @notice The amount of LP tokens (Butter) deposited for a an account
