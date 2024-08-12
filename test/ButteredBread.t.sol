@@ -6,7 +6,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {TransparentUpgradeableProxy} from
     "openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {CURVE_POOL_XDAI_BREAD} from "script/Registry.s.sol";
-import {ICurveStableSwap} from "src/test/ICurveStableSwap.sol";
+import {ICurveStableSwap} from "src/interfaces/ICurveStableSwap.sol";
 import {ButteredBread} from "src/ButteredBread.sol";
 
 contract ButteredBreadTest is Test {
@@ -27,8 +27,8 @@ contract ButteredBreadTest is Test {
         bb = ButteredBread(address(new TransparentUpgradeableProxy(bbImplementation, address(this), initData)));
     }
 
-    function testConfirmPools() public {
-        emit log_named_string("NAME  ", curvePoolXdai.name());
-        emit log_named_string("SYMBOL", curvePoolXdai.symbol());
+    function testConfirmPoolXdai() public {
+        assertEq(curvePoolXdai.name(), "BREAD / WXDAI");
+        assertEq(curvePoolXdai.symbol(), "BUTTER");
     }
 }

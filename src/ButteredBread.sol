@@ -9,18 +9,18 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 
 /**
  * @title Breadchain Buttered Bread
- * @notice Deposit butter (LP tokens) to earn yield
+ * @notice Deposit LP tokens (butter) to earn yield
  * @author Breadchain Collective
  * @custom:coauthor @RonTuretzky
  * @custom:coauthor @daopunk
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
-    mapping(address butter => bool allow) public allowlistedLPs;
-    mapping(address account => mapping(address butter => uint256 balance)) public accountToLPBalances;
+    mapping(address lp => bool allow) public allowlistedLPs;
+    mapping(address account => mapping(address lp => uint256 balance)) public accountToLPBalances;
     mapping(address account => uint256 factor) public scalingFactors;
 
-    modifier isAllowed(address _butter) {
-        if (allowlistedLPs[_butter] != true) revert NotAllowListed();
+    modifier isAllowed(address _lp) {
+        if (allowlistedLPs[_lp] != true) revert NotAllowListed();
         _;
     }
 
@@ -41,18 +41,18 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     }
 
     /// @notice View account balance of LP Tokens
-    function balanceOfButter(address _account, address _butter) external view returns (uint256 _balance) {
-        _balance = accountToLPBalances[_account][_butter];
+    function balanceOfButter(address _account, address _lp) external view returns (uint256 _balance) {
+        _balance = accountToLPBalances[_account][_lp];
     }
 
     /// @notice Deposit LP tokens
-    function deposit(address _butter, uint256 _amount) external virtual isAllowed(_butter) {
-        _deposit(msg.sender, _butter, _amount);
+    function deposit(address _lp, uint256 _amount) external virtual isAllowed(_lp) {
+        _deposit(msg.sender, _lp, _amount);
     }
 
     /// @notice Withdraw LP tokens
-    function withdraw(address _butter, uint256 _amount) external virtual {
-        _withdraw(msg.sender, _butter, _amount);
+    function withdraw(address _lp, uint256 _amount) external virtual {
+        _withdraw(msg.sender, _lp, _amount);
     }
 
     /// @notice ButteredBread tokens are non-transferable
@@ -65,20 +65,20 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         revert NonTransferable();
     }
 
-    function _deposit(address _account, address _butter, uint256 _amount) internal {
-        uint256 beforeBalance = accountToLPBalances[_account][_butter];
-        accountToLPBalances[_account][_butter] = beforeBalance + _amount;
+    function _deposit(address _account, address _lp, uint256 _amount) internal {
+        uint256 beforeBalance = accountToLPBalances[_account][_lp];
+        accountToLPBalances[_account][_lp] = beforeBalance + _amount;
 
-        emit AddButter(_account, _butter, _amount);
+        emit AddButter(_account, _lp, _amount);
     }
 
-    function _withdraw(address _account, address _butter, uint256 _amount) internal {
-        uint256 beforeBalance = accountToLPBalances[_account][_butter];
+    function _withdraw(address _account, address _lp, uint256 _amount) internal {
+        uint256 beforeBalance = accountToLPBalances[_account][_lp];
         if (_amount > beforeBalance) revert InsufficientFunds();
 
-        accountToLPBalances[_account][_butter] = beforeBalance - _amount;
-        IERC20(_butter).transfer(_account, _amount);
+        accountToLPBalances[_account][_lp] = beforeBalance - _amount;
+        IERC20(_lp).transfer(_account, _amount);
 
-        emit RemoveButter(_account, _butter, _amount);
+        emit RemoveButter(_account, _lp, _amount);
     }
 }
