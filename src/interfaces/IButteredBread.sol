@@ -26,6 +26,7 @@ interface IButteredBread {
         string memory _symbol
     ) external;
 
+    /// @notice Returns whether a given liquidity pool is Breadchain sanctioned or not 
     function allowlistedLPs(address _lp) external view returns (bool _allowed);
 
     /// @notice Returns the factor that determines how much ButteredBread should be minted for a Liquidity Pool token (Butter)
