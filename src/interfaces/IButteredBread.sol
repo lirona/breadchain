@@ -33,6 +33,7 @@ interface IButteredBread {
 
     function withdraw(address _lp, uint256 _amount) external;
 
+    /// @notice Defines a liquidity pool's status as sanctioned or unsanctioned by Breadchain
     function modifyAllowList(address _lp, bool _allowed) external;
 
     /// @notice Modifies how much ButteredBread should be minted for a Liquidity Pool token (Butter)
