@@ -91,7 +91,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     function _withdraw(address _account, address _lp, uint256 _amount) internal {
         uint256 beforeBalance = accountToLPBalances[_account][_lp];
         if (_amount > beforeBalance) revert InsufficientFunds();
-        accountToLPBalances[_account][_lp] = beforeBalance - _amount;
+        accountToLPBalances[_account][_lp]  -= _amount;
 
         _burn(_account, _amount * scalingFactors[_lp]);
         IERC20(_lp).transfer(_account, _amount);
