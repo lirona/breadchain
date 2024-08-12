@@ -9,7 +9,7 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 
 /**
  * @title Breadchain Buttered Bread
- * @notice
+ * @notice Deposit butter (LP tokens) to earn yield
  * @author Breadchain Collective
  * @custom:coauthor @RonTuretzky
  * @custom:coauthor @daopunk
@@ -29,8 +29,12 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _disableInitializers();
     }
 
-    function initialize(address[] memory _liquidityPools) external initializer {
+    function initialize(address[] memory _liquidityPools, string memory _name, string memory _symbol)
+        external
+        initializer
+    {
         __Ownable_init(msg.sender);
+        __ERC20_init(_name, _symbol);
         for (uint256 i; i < _liquidityPools.length; ++i) {
             allowlistedLPs[_liquidityPools[i]] = true;
         }
