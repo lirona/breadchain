@@ -54,10 +54,12 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _withdraw(msg.sender, _lp, _amount);
     }
 
+    /// @notice allow or deny LP token
     function modifyAllowList(address _lp, bool _allowed) external virtual onlyOwner {
         allowlistedLPs[_lp] = _allowed;
     }
 
+    /// @notice set LP token scaling factor
     function modifyScalingFactor(address _lp, uint256 _factor) external virtual onlyOwner isAllowed(_lp) {
         if (_factor == 0) revert InvalidValue();
         scalingFactors[_lp] = _factor;
