@@ -17,6 +17,7 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
     /// @notice Access control for Breadchain sanctioned liquidity pools
     mapping(address lp => bool allow) public allowlistedLPs;
+    /// @notice How much ButteredBread should be minted for a Liquidity Pool token (Butter) 
     mapping(address lp => uint256 factor) public scalingFactors;
     mapping(address account => mapping(address lp => uint256 balance)) public accountToLPBalances;
 
