@@ -35,5 +35,6 @@ interface IButteredBread {
 
     function modifyAllowList(address _lp, bool _allowed) external;
 
+    /// @notice Modifies how much ButteredBread should be minted for a Liquidity Pool token (Butter)
     function modifyScalingFactor(address _lp, uint256 _factor) external;
 }
