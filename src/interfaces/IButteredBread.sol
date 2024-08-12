@@ -5,6 +5,7 @@ pragma solidity ^0.8.25;
  * @title Breadchain Buttered Bread interface
  */
 interface IButteredBread {
+    /// @notice Occurs when user does not have sufficient Butter to mint ButteredBread
     error InsufficientFunds();
     error InvalidValue();
     error NotAllowListed();
