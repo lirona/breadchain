@@ -69,6 +69,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         revert NonTransferable();
     }
 
+    /// @notice Deposit LP tokens and mint ButteredBread with corresponding LP scaling factor
     function _deposit(address _account, address _lp, uint256 _amount) internal {
         uint256 beforeBalance = accountToLPBalances[_account][_lp];
         accountToLPBalances[_account][_lp] = beforeBalance + _amount;
@@ -78,6 +79,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         emit AddButter(_account, _lp, _amount);
     }
 
+    /// @notice Withdraw LP tokens and burn ButteredBread with corresponding LP scaling factor
     function _withdraw(address _account, address _lp, uint256 _amount) internal {
         uint256 beforeBalance = accountToLPBalances[_account][_lp];
         if (_amount > beforeBalance) revert InsufficientFunds();
