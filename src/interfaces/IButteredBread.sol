@@ -9,6 +9,7 @@ interface IButteredBread {
     error InsufficientFunds();
     /// @notice Occurs when an invalid value is attempted to be used in setter functions
     error InvalidValue();
+    /// @notice Occurs when attempting a deposit with a non sanctioned LP
     error NotAllowListed();
     error NonTransferable();
 
