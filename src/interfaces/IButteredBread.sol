@@ -31,6 +31,7 @@ interface IButteredBread {
     /// @notice Deposits Butter (LP Tokens) and mints ButteredBread according to the respective LP scaling factor
     function deposit(address _lp, uint256 _amount) external;
 
+    /// @notice Withdraws some amount of Butter (LP token) and burns an amount of the user's ButteredBread according to the respective scaling factor
     function withdraw(address _lp, uint256 _amount) external;
 
     /// @notice Defines a liquidity pool's status as sanctioned or unsanctioned by Breadchain
