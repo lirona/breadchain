@@ -7,6 +7,7 @@ pragma solidity ^0.8.25;
 interface IButteredBread {
     /// @notice Occurs when user does not have sufficient Butter to mint ButteredBread
     error InsufficientFunds();
+    /// @notice Occurs when an invalid value is attempted to be used in setter functions
     error InvalidValue();
     error NotAllowListed();
     error NonTransferable();
