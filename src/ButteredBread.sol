@@ -80,6 +80,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /// @notice Deposit LP tokens and mint ButteredBread with corresponding LP scaling factor
     function _deposit(address _account, address _lp, uint256 _amount) internal {
+        IERC20(_lp).transferFrom(_account, address(this), _amount);
         accountToLPBalances[_account][_lp] += _amount;
 
         _mint(_account, _amount * scalingFactors[_lp]);
