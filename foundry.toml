@@ -1,3 +1,8 @@
+[fmt]
+line_length = 120
+number_underscore = 'thousands'
+wrap_comments = false
+
 [profile.default]
 src = "src"
 out = "out"
