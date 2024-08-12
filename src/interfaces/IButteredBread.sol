@@ -28,6 +28,7 @@ interface IButteredBread {
     /// @notice The amount of LP tokens (Butter) deposited for a an account
     function accountToLPBalances(address _account, address _lp) external view returns (uint256 _balance);
 
+    /// @notice Deposits Butter (LP Tokens) and mints ButteredBread according to the respective LP scaling factor
     function deposit(address _lp, uint256 _amount) external;
 
     function withdraw(address _lp, uint256 _amount) external;
