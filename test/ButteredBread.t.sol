@@ -47,8 +47,8 @@ contract ButteredBreadTest is Test {
         liquidityAmounts[1] = _amountT1;
 
         vm.startPrank(_account);
-        IERC20(BREAD).approve(CURVE_POOL_XDAI_BREAD, type(uint256).max);
         IERC20(XDAI).approve(CURVE_POOL_XDAI_BREAD, type(uint256).max);
+        IERC20(BREAD).approve(CURVE_POOL_XDAI_BREAD, type(uint256).max);
         curvePoolXdai.add_liquidity(liquidityAmounts, min_lp_mint);
         vm.stopPrank();
     }
@@ -76,9 +76,19 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         assertGt(curvePoolXdai.balanceOf(ALICE), TOKEN_AMOUNT * 3 / 2);
     }
 
-    // function testAccessControlForLP() public {}
+    function testAccessControlForLp() public {
+        vm.prank(ALICE);
+        bb.deposit(CURVE_POOL_XDAI_BREAD, curvePoolXdai.balanceOf(ALICE));
+    }
 
-    // function testAccessControlForOwner() public {}
+    function testAccessControlForLpRevert() public {
+        deal(BREAD, ALICE, TOKEN_AMOUNT);
+        vm.prank(ALICE);
+        vm.expectRevert();
+        bb.deposit(BREAD, TOKEN_AMOUNT);
+    }
+
+    function testAccessControlForOwner() public {}
 }
 
 // contract ButteredBreadTest_Fuzz is ButteredBreadTest {}

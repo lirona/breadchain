@@ -13,7 +13,7 @@ build_info = true
 ffi = true
 ast = true
 extra_output = ["storageLayout"]
-evm_version = "cancun"
+evm_version = "cancun" # Compile Curve LP interface
 
 [rpc_endpoints]
 sepolia = "QUICKNODE_ENDPOINT_URL"
