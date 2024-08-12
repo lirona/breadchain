@@ -16,8 +16,8 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
     mapping(address lp => bool allow) public allowlistedLPs;
+    mapping(address lp => uint256 factor) public scalingFactors;
     mapping(address account => mapping(address lp => uint256 balance)) public accountToLPBalances;
-    mapping(address account => uint256 factor) public scalingFactors;
 
     modifier isAllowed(address _lp) {
         if (allowlistedLPs[_lp] != true) revert NotAllowListed();
@@ -29,14 +29,18 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _disableInitializers();
     }
 
-    function initialize(address[] memory _liquidityPools, string memory _name, string memory _symbol)
-        external
-        initializer
-    {
+    function initialize(
+        address[] memory _liquidityPools,
+        uint256[] memory _scalingFactors,
+        string memory _name,
+        string memory _symbol
+    ) external initializer {
+        if (_liquidityPools.length != _scalingFactors.length) revert InvalidValue();
         __Ownable_init(msg.sender);
         __ERC20_init(_name, _symbol);
         for (uint256 i; i < _liquidityPools.length; ++i) {
             allowlistedLPs[_liquidityPools[i]] = true;
+            scalingFactors[_liquidityPools[i]] = _scalingFactors[i];
         }
     }
 
@@ -69,7 +73,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         uint256 beforeBalance = accountToLPBalances[_account][_lp];
         accountToLPBalances[_account][_lp] = beforeBalance + _amount;
 
-        _mint(_account, _amount);
+        _mint(_account, _amount * scalingFactors[_lp]);
 
         emit AddButter(_account, _lp, _amount);
     }
@@ -77,11 +81,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     function _withdraw(address _account, address _lp, uint256 _amount) internal {
         uint256 beforeBalance = accountToLPBalances[_account][_lp];
         if (_amount > beforeBalance) revert InsufficientFunds();
-
         accountToLPBalances[_account][_lp] = beforeBalance - _amount;
-        IERC20(_lp).transfer(_account, _amount);
 
-        _burn(_account, _amount);
+        _burn(_account, _amount * scalingFactors[_lp]);
+        IERC20(_lp).transfer(_account, _amount);
 
         emit RemoveButter(_account, _lp, _amount);
     }

@@ -9,6 +9,8 @@ import {CURVE_POOL_XDAI_BREAD} from "script/Registry.s.sol";
 import {ICurveStableSwap} from "src/interfaces/ICurveStableSwap.sol";
 import {ButteredBread} from "src/ButteredBread.sol";
 
+uint256 constant XDAI_FACTOR = 10;
+
 contract ButteredBreadTest is Test {
     ButteredBread public bb;
     ICurveStableSwap public curvePoolXdai;
@@ -20,8 +22,12 @@ contract ButteredBreadTest is Test {
         address[] memory _liquidityPools = new address[](1);
         _liquidityPools[0] = address(curvePoolXdai);
 
-        bytes memory initData =
-            abi.encodeWithSelector(ButteredBread.initialize.selector, _liquidityPools, "ButteredBread", "BB");
+        uint256[] memory _scalingFactors = new uint256[](1);
+        _scalingFactors[0] = XDAI_FACTOR;
+
+        bytes memory initData = abi.encodeWithSelector(
+            ButteredBread.initialize.selector, _liquidityPools, _scalingFactors, "ButteredBread", "BB"
+        );
 
         address bbImplementation = address(new ButteredBread());
         bb = ButteredBread(address(new TransparentUpgradeableProxy(bbImplementation, address(this), initData)));
