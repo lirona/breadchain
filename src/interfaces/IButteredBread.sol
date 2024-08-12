@@ -16,6 +16,7 @@ interface IButteredBread {
 
     /// @notice Specifics how much LP Token (Butter) has been added  
     event AddButter(address _account, address _lp, uint256 _amount);
+    /// @notice Specifics how much LP Token (Butter) has been removed
     event RemoveButter(address _account, address _lp, uint256 _amount);
 
     function initialize(
