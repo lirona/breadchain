@@ -11,6 +11,7 @@ interface IButteredBread {
     error InvalidValue();
     /// @notice Occurs when attempting a deposit with a non sanctioned LP
     error NotAllowListed();
+    /// @notice Occurs when attempting to transfer ButteredBread , a utility token for voting not meant for trading
     error NonTransferable();
 
     event AddButter(address _account, address _lp, uint256 _amount);
