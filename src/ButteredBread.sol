@@ -44,11 +44,6 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         }
     }
 
-    /// @notice View account balance of LP Tokens
-    function balanceOfButter(address _account, address _lp) external view returns (uint256 _balance) {
-        _balance = accountToLPBalances[_account][_lp];
-    }
-
     /// @notice Deposit LP tokens
     function deposit(address _lp, uint256 _amount) external virtual isAllowed(_lp) {
         _deposit(msg.sender, _lp, _amount);
@@ -57,6 +52,15 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     /// @notice Withdraw LP tokens
     function withdraw(address _lp, uint256 _amount) external virtual {
         _withdraw(msg.sender, _lp, _amount);
+    }
+
+    function modifyAllowList(address _lp, bool _allowed) external virtual onlyOwner {
+        allowlistedLPs[_lp] = _allowed;
+    }
+
+    function modifyScalingFactor(address _lp, uint256 _factor) external virtual onlyOwner isAllowed(_lp) {
+        if (_factor == 0) revert InvalidValue();
+        scalingFactors[_lp] = _factor;
     }
 
     /// @notice ButteredBread tokens are non-transferable
@@ -75,6 +79,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         accountToLPBalances[_account][_lp] = beforeBalance + _amount;
 
         _mint(_account, _amount * scalingFactors[_lp]);
+        if (this.delegates(_account) == address(0)) _delegate(_account, _account);
 
         emit AddButter(_account, _lp, _amount);
     }

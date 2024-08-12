@@ -5,13 +5,13 @@ pragma solidity ^0.8.25;
  * @title Breadchain Buttered Bread interface
  */
 interface IButteredBread {
-    error NotAllowListed();
-    error NonTransferable();
     error InsufficientFunds();
     error InvalidValue();
+    error NotAllowListed();
+    error NonTransferable();
 
-    event AddButter(address _account, address _butter, uint256 _amount);
-    event RemoveButter(address _account, address _butter, uint256 _amount);
+    event AddButter(address _account, address _lp, uint256 _amount);
+    event RemoveButter(address _account, address _lp, uint256 _amount);
 
     function initialize(
         address[] memory _liquidityPools,
@@ -20,9 +20,17 @@ interface IButteredBread {
         string memory _symbol
     ) external;
 
-    function balanceOfButter(address _account, address _butter) external returns (uint256 _balance);
+    function allowlistedLPs(address _lp) external view returns (bool _allowed);
 
-    function deposit(address _butter, uint256 _amount) external;
+    function scalingFactors(address _lp) external view returns (uint256 _factor);
 
-    function withdraw(address _butter, uint256 _amount) external;
+    function accountToLPBalances(address _account, address _lp) external view returns (uint256 _balance);
+
+    function deposit(address _lp, uint256 _amount) external;
+
+    function withdraw(address _lp, uint256 _amount) external;
+
+    function modifyAllowList(address _lp, bool _allowed) external;
+
+    function modifyScalingFactor(address _lp, uint256 _factor) external;
 }
