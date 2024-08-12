@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.25;
 
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {ERC20VotesUpgradeable} from
@@ -36,24 +36,27 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         }
     }
 
+    /// @notice View account balance of LP Tokens
     function balanceOfButter(address _account, address _butter) external view returns (uint256 _balance) {
         _balance = accountToLPBalances[_account][_butter];
     }
 
+    /// @notice Deposit LP tokens
     function deposit(address _butter, uint256 _amount) external virtual isAllowed(_butter) {
         _deposit(msg.sender, _butter, _amount);
     }
 
+    /// @notice Withdraw LP tokens
     function withdraw(address _butter, uint256 _amount) external virtual {
         _withdraw(msg.sender, _butter, _amount);
     }
 
-    /// @dev ButteredBread tokens are non-transferable
+    /// @notice ButteredBread tokens are non-transferable
     function transfer(address, uint256) public virtual override returns (bool) {
         revert NonTransferable();
     }
 
-    /// @dev ButteredBread tokens are non-transferable
+    /// @notice ButteredBread tokens are non-transferable
     function transferFrom(address, address, uint256) public virtual override returns (bool) {
         revert NonTransferable();
     }
@@ -61,12 +64,17 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     function _deposit(address _account, address _butter, uint256 _amount) internal {
         uint256 beforeBalance = accountToLPBalances[_account][_butter];
         accountToLPBalances[_account][_butter] = beforeBalance + _amount;
+
+        emit AddButter(_account, _butter, _amount);
     }
 
     function _withdraw(address _account, address _butter, uint256 _amount) internal {
         uint256 beforeBalance = accountToLPBalances[_account][_butter];
         if (_amount > beforeBalance) revert InsufficientFunds();
+
         accountToLPBalances[_account][_butter] = beforeBalance - _amount;
         IERC20(_butter).transfer(_account, _amount);
+
+        emit RemoveButter(_account, _butter, _amount);
     }
 }
