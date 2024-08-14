@@ -14,19 +14,21 @@ interface IButteredBread {
     /// @notice Occurs when attempting to transfer ButteredBread , a utility token for voting not meant for trading
     error NonTransferable();
 
-    /// @notice Specifics how much LP Token (Butter) has been added  
+    /// @notice Specifics how much LP Token (Butter) has been added
     event AddButter(address _account, address _lp, uint256 _amount);
     /// @notice Specifics how much LP Token (Butter) has been removed
     event RemoveButter(address _account, address _lp, uint256 _amount);
 
-    function initialize(
-        address[] memory _liquidityPools,
-        uint256[] memory _scalingFactors,
-        string memory _name,
-        string memory _symbol
-    ) external;
+    struct InitData {
+        address[] liquidityPools;
+        uint256[] scalingFactors;
+        string name;
+        string symbol;
+    }
 
-    /// @notice Returns whether a given liquidity pool is Breadchain sanctioned or not 
+    function initialize(InitData calldata _initData) external;
+
+    /// @notice Returns whether a given liquidity pool is Breadchain sanctioned or not
     function allowlistedLPs(address _lp) external view returns (bool _allowed);
 
     /// @notice Returns the factor that determines how much ButteredBread should be minted for a Liquidity Pool token (Butter)

@@ -10,6 +10,7 @@ import {TransparentUpgradeableProxy} from
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ICurveStableSwap} from "src/interfaces/ICurveStableSwap.sol";
 import {ButteredBread} from "src/ButteredBread.sol";
+import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 
 uint256 constant XDAI_FACTOR = 7;
 uint256 constant TOKEN_AMOUNT = 1000 ether;
@@ -28,12 +29,17 @@ contract ButteredBreadTest is Test {
         uint256[] memory _scalingFactors = new uint256[](1);
         _scalingFactors[0] = XDAI_FACTOR;
 
-        bytes memory initData = abi.encodeWithSelector(
-            ButteredBread.initialize.selector, _liquidityPools, _scalingFactors, "ButteredBread", "BB"
-        );
+        IButteredBread.InitData memory initData;
+        initData.liquidityPools = _liquidityPools;
+        initData.scalingFactors = _scalingFactors;
+        initData.name = "ButteredBread";
+        initData.symbol = "BB";
+
+        bytes memory implementationData = abi.encodeWithSelector(ButteredBread.initialize.selector, initData);
 
         address bbImplementation = address(new ButteredBread());
-        bb = ButteredBread(address(new TransparentUpgradeableProxy(bbImplementation, address(this), initData)));
+        bb =
+            ButteredBread(address(new TransparentUpgradeableProxy(bbImplementation, address(this), implementationData)));
 
         vm.label(address(bb), "ButteredBread");
         vm.label(GNOSIS_CURVE_POOL_XDAI_BREAD, "CurveLP_XDAI_BREAD");

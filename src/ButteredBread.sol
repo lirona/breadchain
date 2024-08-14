@@ -32,18 +32,13 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _disableInitializers();
     }
 
-    function initialize(
-        address[] memory _liquidityPools,
-        uint256[] memory _scalingFactors,
-        string memory _name,
-        string memory _symbol
-    ) external initializer {
-        if (_liquidityPools.length != _scalingFactors.length) revert InvalidValue();
+    function initialize(InitData calldata _initData) external initializer {
+        if (_initData.liquidityPools.length != _initData.scalingFactors.length) revert InvalidValue();
         __Ownable_init(msg.sender);
-        __ERC20_init(_name, _symbol);
-        for (uint256 i; i < _liquidityPools.length; ++i) {
-            allowlistedLPs[_liquidityPools[i]] = true;
-            scalingFactors[_liquidityPools[i]] = _scalingFactors[i];
+        __ERC20_init(_initData.name, _initData.symbol);
+        for (uint256 i; i < _initData.liquidityPools.length; ++i) {
+            allowlistedLPs[_initData.liquidityPools[i]] = true;
+            scalingFactors[_initData.liquidityPools[i]] = _initData.scalingFactors[i];
         }
     }
 
