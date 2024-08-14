@@ -22,7 +22,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     /// @notice Butter balance by account and Liquidity Pool token deposited
     mapping(address account => mapping(address lp => uint256 balance)) public accountToLPBalances;
 
-    modifier isAllowed(address _lp) {
+    modifier onlyAllowed(address _lp) {
         if (allowlistedLPs[_lp] != true) revert NotAllowListed();
         _;
     }
@@ -48,7 +48,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     }
 
     /// @notice Deposit LP tokens
-    function deposit(address _lp, uint256 _amount) external virtual isAllowed(_lp) {
+    function deposit(address _lp, uint256 _amount) external virtual onlyAllowed(_lp) {
         _deposit(msg.sender, _lp, _amount);
     }
 
@@ -63,7 +63,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     }
 
     /// @notice set LP token scaling factor
-    function modifyScalingFactor(address _lp, uint256 _factor) external virtual onlyOwner isAllowed(_lp) {
+    function modifyScalingFactor(address _lp, uint256 _factor) external virtual onlyOwner onlyAllowed(_lp) {
         if (_factor == 0) revert InvalidValue();
         scalingFactors[_lp] = _factor;
     }
