@@ -19,6 +19,12 @@ interface IButteredBread {
     /// @notice Specifics how much LP Token (Butter) has been removed
     event RemoveButter(address _account, address _lp, uint256 _amount);
 
+    /**
+     * @param liquidityPools sanctioned LPs
+     * @param scalingFactors scaling factor on mint per sanctioned LP
+     * @param name ERC20 token name
+     * @param symbol ERC20 token symbol
+     */
     struct InitData {
         address[] liquidityPools;
         uint256[] scalingFactors;
@@ -26,6 +32,7 @@ interface IButteredBread {
         string symbol;
     }
 
+    /// @notice initialize contract as TransparentUpgradeableProxy
     function initialize(InitData calldata _initData) external;
 
     /// @notice Returns whether a given liquidity pool is Breadchain sanctioned or not

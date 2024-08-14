@@ -32,6 +32,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _disableInitializers();
     }
 
+    /// @param _initData see IButteredBread
     function initialize(InitData calldata _initData) external initializer {
         if (_initData.liquidityPools.length != _initData.scalingFactors.length) revert InvalidValue();
         __Ownable_init(msg.sender);
