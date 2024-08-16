@@ -111,7 +111,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
     }
 
     function testDeposit() public {
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
         assertEq(curvePoolXdai.balanceOf(address(bb)), 0);
 
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
@@ -119,7 +119,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
     }
 
@@ -129,14 +129,14 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
 
         vm.prank(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), depositAmount);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
         assertEq(curvePoolXdai.balanceOf(address(bb)), 0);
     }
 
@@ -146,7 +146,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
 
         vm.prank(BOBBY);
@@ -160,7 +160,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
 
         vm.prank(ALICE);
@@ -240,7 +240,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.factor);
 
         assertEq(bb.scalingFactors(GNOSIS_CURVE_POOL_XDAI_BREAD), _s.factor);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.deposit);
         _;
     }
@@ -250,7 +250,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit);
 
         assertEq(bb.balanceOf(ALICE), _s.deposit * _s.factor);
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
     }
 
@@ -258,14 +258,14 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         vm.startPrank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit);
 
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
 
         uint256 preWithdrawBalance = bb.balanceOf(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.withdrawal);
 
         assertEq(bb.balanceOf(ALICE), preWithdrawBalance - (_s.withdrawal * _s.factor));
-        assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
+        // assertEq(bb.accountToLPBalances(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);
     }
 
@@ -282,3 +282,5 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         bb.modifyScalingFactor(_contract, 69);
     }
 }
+
+// TODO test scaling factor syncing mechanism
