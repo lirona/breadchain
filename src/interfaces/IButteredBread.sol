@@ -32,6 +32,10 @@ interface IButteredBread {
         string symbol;
     }
 
+    /**
+     * @param balance Value of deposited Butter (LP tokens)
+     * @param scalingFactor At the time of deposit or updated with `syncVotingWeight` function
+     */
     struct LPData {
         uint256 balance;
         uint256 scalingFactor;

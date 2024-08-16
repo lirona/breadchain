@@ -147,6 +147,8 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
             } else {
                 _burn(_account, (lpBalance * initialScalingFactor) - (lpBalance * currentScalingFactor));
             }
+
+            _accountToLPData[_account][_lp].scalingFactor = scalingFactors[_lp];
         }
     }
 }
