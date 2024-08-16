@@ -136,10 +136,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /// @notice Sync voting weight with scaling factor
     function _syncVotingWeight(address _account, address _lp) internal {
-        if (scalingFactors[_lp] != _accountToLPData[_account][_lp].scalingFactor) {
-            /// @dev due to false likelyhood, variables declared only if true
-            uint256 currentScalingFactor = scalingFactors[_lp];
-            uint256 initialScalingFactor = _accountToLPData[_account][_lp].scalingFactor;
+        uint256 currentScalingFactor = scalingFactors[_lp];
+        uint256 initialScalingFactor = _accountToLPData[_account][_lp].scalingFactor;
+
+        if (currentScalingFactor != initialScalingFactor) {
             uint256 lpBalance = _accountToLPData[_account][_lp].balance;
 
             if (currentScalingFactor > initialScalingFactor) {
@@ -148,7 +148,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
                 _burn(_account, (lpBalance * initialScalingFactor) - (lpBalance * currentScalingFactor));
             }
 
-            _accountToLPData[_account][_lp].scalingFactor = scalingFactors[_lp];
+            _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
         }
     }
 }
