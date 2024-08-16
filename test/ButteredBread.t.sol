@@ -49,14 +49,14 @@ contract ButteredBreadTest is Test {
         uint256 min_lp_mint = 1;
 
         deal(GNOSIS_BREAD, _account, _amountT0);
-        deal(XDAI, _account, _amountT1);
+        deal(GNOSIS_XDAI, _account, _amountT1);
 
         uint256[] memory liquidityAmounts = new uint256[](2);
         liquidityAmounts[0] = _amountT0;
         liquidityAmounts[1] = _amountT1;
 
         vm.startPrank(_account);
-        IERC20(XDAI).approve(GNOSIS_CURVE_POOL_XDAI_BREAD, type(uint256).max);
+        IERC20(GNOSIS_XDAI).approve(GNOSIS_CURVE_POOL_XDAI_BREAD, type(uint256).max);
         IERC20(GNOSIS_BREAD).approve(GNOSIS_CURVE_POOL_XDAI_BREAD, type(uint256).max);
         curvePoolXdai.add_liquidity(liquidityAmounts, min_lp_mint);
         curvePoolXdai.approve(address(bb), type(uint256).max);

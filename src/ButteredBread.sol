@@ -16,7 +16,7 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
     /// @notice Access control for Breadchain sanctioned liquidity pools
-    mapping(address lp => bool allow) public allowlistedLPs;
+    mapping(address lp => bool allowed) public allowlistedLPs;
     /// @notice How much ButteredBread should be minted for a Liquidity Pool token (Butter)
     mapping(address lp => uint256 factor) public scalingFactors;
     /// @notice Butter balance by account and Liquidity Pool token deposited
@@ -32,34 +32,52 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _disableInitializers();
     }
 
-    /// @param _initData see IButteredBread
+    /// @param _initData See IButteredBread
     function initialize(InitData calldata _initData) external initializer {
         if (_initData.liquidityPools.length != _initData.scalingFactors.length) revert InvalidValue();
+
         __Ownable_init(msg.sender);
         __ERC20_init(_initData.name, _initData.symbol);
+
         for (uint256 i; i < _initData.liquidityPools.length; ++i) {
             allowlistedLPs[_initData.liquidityPools[i]] = true;
             scalingFactors[_initData.liquidityPools[i]] = _initData.scalingFactors[i];
         }
     }
 
-    /// @notice Deposit LP tokens
-    function deposit(address _lp, uint256 _amount) external virtual onlyAllowed(_lp) {
+    /**
+     * @notice Deposit LP tokens
+     * @param _lp Liquidity Pool token
+     * @param _amount Value of LP token
+     */
+    function deposit(address _lp, uint256 _amount) external onlyAllowed(_lp) {
         _deposit(msg.sender, _lp, _amount);
     }
 
-    /// @notice Withdraw LP tokens
-    function withdraw(address _lp, uint256 _amount) external virtual {
+    /**
+     * @notice Withdraw LP tokens
+     * @param _lp Liquidity Pool token
+     * @param _amount Value of LP token
+     */
+    function withdraw(address _lp, uint256 _amount) external {
         _withdraw(msg.sender, _lp, _amount);
     }
 
-    /// @notice allow or deny LP token
-    function modifyAllowList(address _lp, bool _allowed) external virtual onlyOwner {
+    /**
+     * @notice Allow or deny LP token
+     * @param _lp Liquidity Pool token
+     * @param _allowed Sanction status of LP token
+     */
+    function modifyAllowList(address _lp, bool _allowed) external onlyOwner {
         allowlistedLPs[_lp] = _allowed;
     }
 
-    /// @notice set LP token scaling factor
-    function modifyScalingFactor(address _lp, uint256 _factor) external virtual onlyOwner onlyAllowed(_lp) {
+    /**
+     * @notice Set LP token scaling factor
+     * @param _lp Liquidity Pool token
+     * @param _factor Scaling incentive of LP token
+     */
+    function modifyScalingFactor(address _lp, uint256 _factor) external onlyOwner onlyAllowed(_lp) {
         if (_factor == 0) revert InvalidValue();
         scalingFactors[_lp] = _factor;
     }
