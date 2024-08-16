@@ -20,7 +20,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     /// @notice How much ButteredBread should be minted for a Liquidity Pool token (Butter)
     mapping(address lp => uint256 factor) public scalingFactors;
     /// @notice Butter balance by account and Liquidity Pool token deposited
-    mapping(address account => mapping(address lp => LPData)) public _accountToLPData;
+    mapping(address account => mapping(address lp => LPData)) internal _accountToLPData;
 
     modifier onlyAllowed(address _lp) {
         if (allowlistedLPs[_lp] != true) revert NotAllowListed();
@@ -47,6 +47,8 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /**
      * @notice The amount of LP tokens (Butter) deposited for a an account
+     * @param _account Voting account
+     * @param _lp Liquidity Pool token
      */
     function accountToLPData(address _account, address _lp) external view returns (LPData memory _lpData) {
         _lpData = _accountToLPData[_account][_lp];
@@ -66,7 +68,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @param _lp Liquidity Pool token
      * @param _amount Value of LP token
      */
-    function withdraw(address _lp, uint256 _amount) external {
+    function withdraw(address _lp, uint256 _amount) external onlyAllowed(_lp) {
         _withdraw(msg.sender, _lp, _amount);
     }
 
@@ -91,7 +93,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /**
      * @notice Sync voting weight with LP scaling factor
-     * Note: Can be called from cast vote to ensure proper voting weight
+     * Note: Can be called from `castVote` on governance contract to ensure proper voting weight
      * @param _account Voting account
      * @param _lp Liquidity Pool token
      */
@@ -114,7 +116,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         IERC20(_lp).transferFrom(_account, address(this), _amount);
         _accountToLPData[_account][_lp].balance += _amount;
 
-        _mint(_account, _amount * scalingFactors[_lp]);
+        uint256 currentScalingFactor = scalingFactors[_lp];
+        _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
+
+        _mint(_account, _amount * currentScalingFactor);
         if (this.delegates(_account) == address(0)) _delegate(_account, _account);
 
         emit AddButter(_account, _lp, _amount);
@@ -141,14 +146,13 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
         if (currentScalingFactor != initialScalingFactor) {
             uint256 lpBalance = _accountToLPData[_account][_lp].balance;
+            _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
 
             if (currentScalingFactor > initialScalingFactor) {
                 _mint(_account, (lpBalance * currentScalingFactor) - (lpBalance * initialScalingFactor));
             } else {
                 _burn(_account, (lpBalance * initialScalingFactor) - (lpBalance * currentScalingFactor));
             }
-
-            _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
         }
     }
 }
