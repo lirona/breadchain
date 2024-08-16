@@ -54,7 +54,7 @@ interface IButteredBread {
     function accountToLPData(address _account, address _lp) external view returns (LPData memory _lpData);
 
     /// @notice Sync voting weight with LP scaling factor
-    function syncVotingWeight(address _account, address _lp) external onlyAllowed(_lp);
+    function syncVotingWeight(address _account, address _lp) external;
 
     /// @notice Deposits Butter (LP Tokens) and mints ButteredBread according to the respective LP scaling factor
     function deposit(address _lp, uint256 _amount) external;
