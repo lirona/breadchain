@@ -101,6 +101,17 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _syncVotingWeight(_account, _lp);
     }
 
+    /**
+     * @notice Sync multiple voting weights with single LP scaling factor
+     * @param _account Voting accounts
+     * @param _lp Liquidity Pool token
+     */
+    function syncVotingWeights(address[] calldata _account, address _lp) external onlyAllowed(_lp) {
+        for (uint256 i = 0; i < _account.length; i++) {
+            _syncVotingWeight(_account[i], _lp);
+        }
+    }
+
     /// @notice ButteredBread tokens are non-transferable
     function transfer(address, uint256) public virtual override returns (bool) {
         revert NonTransferable();
@@ -129,9 +140,9 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     function _withdraw(address _account, address _lp, uint256 _amount) internal {
         uint256 beforeBalance = _accountToLPData[_account][_lp].balance;
         if (_amount > beforeBalance) revert InsufficientFunds();
-        _accountToLPData[_account][_lp].balance -= _amount;
 
         _syncVotingWeight(_account, _lp);
+        _accountToLPData[_account][_lp].balance -= _amount;
 
         _burn(_account, _amount * scalingFactors[_lp]);
         IERC20(_lp).transfer(_account, _amount);

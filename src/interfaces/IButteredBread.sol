@@ -67,4 +67,7 @@ interface IButteredBread {
 
     /// @notice Sync voting weight with LP scaling factor
     function syncVotingWeight(address _account, address _lp) external;
+
+    /// @notice Sync multiple voting weights with single LP scaling factor
+    function syncVotingWeights(address[] calldata _account, address _lp) external;
 }
