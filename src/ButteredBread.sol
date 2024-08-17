@@ -95,7 +95,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /**
      * @notice Sync voting weight with LP scaling factor
-     * Note: Can be called from `castVote` on governance contract to ensure proper voting weight
+     * Note: Can be called from `castVote` on governance contract to update voting weight
      * @param _account Voting account
      * @param _lp Liquidity Pool token
      */
