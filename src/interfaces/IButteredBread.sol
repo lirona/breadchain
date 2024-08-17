@@ -22,6 +22,7 @@ interface IButteredBread {
     /**
      * @param liquidityPools sanctioned LPs
      * @param scalingFactors scaling factor on mint per sanctioned LP
+     * Note: each scaling factor is a fixed point percent (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
      * @param name ERC20 token name
      * @param symbol ERC20 token symbol
      */

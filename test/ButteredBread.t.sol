@@ -12,12 +12,14 @@ import {ICurveStableSwap} from "src/interfaces/ICurveStableSwap.sol";
 import {ButteredBread} from "src/ButteredBread.sol";
 import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 
-uint256 constant XDAI_FACTOR = 7; // 700% scaling factor; X7
+uint256 constant XDAI_FACTOR = 700; // 700% scaling factor; 7X
 uint256 constant TOKEN_AMOUNT = 1000 ether;
 
 contract ButteredBreadTest is Test {
     ButteredBread public bb;
     ICurveStableSwap public curvePoolXdai;
+
+    uint256 fixedPointPercent;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("gnosis"));
@@ -40,6 +42,8 @@ contract ButteredBreadTest is Test {
         address bbImplementation = address(new ButteredBread());
         bb =
             ButteredBread(address(new TransparentUpgradeableProxy(bbImplementation, address(this), implementationData)));
+
+        fixedPointPercent = bb.FIXED_POINT_PERCENT();
 
         vm.label(address(bb), "ButteredBread");
         vm.label(GNOSIS_CURVE_POOL_XDAI_BREAD, "CurveLP_XDAI_BREAD");
@@ -177,7 +181,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         assertEq(bb.scalingFactors(GNOSIS_CURVE_POOL_XDAI_BREAD), XDAI_FACTOR);
 
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
-        uint256 scaledMintAmount = depositAmount * XDAI_FACTOR;
+        uint256 scaledMintAmount = depositAmount * XDAI_FACTOR / fixedPointPercent;
 
         vm.prank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
@@ -187,7 +191,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
 
     function testBurnScalingFactor() public {
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
-        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR;
+        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR / fixedPointPercent;
 
         vm.prank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
@@ -202,13 +206,13 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
 
     function testBurnScalingFactorWithUpdatedScalingFactor() public {
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
-        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR;
+        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR / fixedPointPercent;
 
         vm.prank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(bb.balanceOf(ALICE), scaledBurnAmount);
-        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, 10);
+        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, 1000);
         bb.syncVotingWeight(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
 
         vm.prank(ALICE);
@@ -219,13 +223,13 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
 
     function testBurnScalingFactorWithUpdatedScalingFactorPartialAmount() public {
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
-        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR;
+        uint256 scaledBurnAmount = depositAmount * XDAI_FACTOR / fixedPointPercent;
 
         vm.prank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
         assertEq(bb.balanceOf(ALICE), scaledBurnAmount);
 
-        uint256 updatedScalingFactor = 10;
+        uint256 updatedScalingFactor = 1000;
         bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, updatedScalingFactor);
         bb.syncVotingWeight(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
 
@@ -233,7 +237,8 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         vm.prank(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, quaterWithdraw);
 
-        uint256 adjustedVotingWeight = (depositAmount * updatedScalingFactor) - (quaterWithdraw * updatedScalingFactor);
+        uint256 adjustedVotingWeight =
+            ((depositAmount * updatedScalingFactor) - (quaterWithdraw * updatedScalingFactor)) / fixedPointPercent;
         assertEq(bb.balanceOf(ALICE), adjustedVotingWeight);
     }
 
@@ -272,8 +277,10 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
     }
 
     modifier happyPath(Scenario memory _s) {
-        _s.initialFactor = bound(_s.initialFactor, 1, 100);
-        _s.updatedFactor = bound(_s.updatedFactor, 1, 100);
+        // scaling factor range of 1X - 100X
+        _s.initialFactor = bound(_s.initialFactor, 100, 100_000);
+        _s.updatedFactor = bound(_s.updatedFactor, 100, 100_000);
+
         _s.deposit = bound(_s.deposit, 1 ether, 10_000 ether);
         vm.assume(_s.withdrawal <= _s.deposit);
         vm.assume(_s.withdrawal > 1 ether / 2);
@@ -294,7 +301,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         vm.startPrank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit);
 
-        assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor);
+        assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor / fixedPointPercent);
         assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
     }
@@ -309,7 +316,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         uint256 preWithdrawBalance = bb.balanceOf(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.withdrawal);
 
-        assertEq(bb.balanceOf(ALICE), preWithdrawBalance - (_s.withdrawal * _s.initialFactor));
+        assertEq(bb.balanceOf(ALICE), preWithdrawBalance - (_s.withdrawal * _s.initialFactor / fixedPointPercent));
         assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);
     }
@@ -320,34 +327,21 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
 
         uint256 initDeposit = _helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
         assertEq(initDeposit, _s.deposit);
-        assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor);
+        assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor / fixedPointPercent);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
 
         bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.updatedFactor);
-        uint256 preWithdrawal = _helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
 
         vm.prank(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.withdrawal);
 
-        uint256 postWithdrawal = _helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
-
-        assertEq(bb.balanceOf(ALICE), ((_s.deposit * _s.updatedFactor) - (_s.withdrawal * _s.updatedFactor)));
-        assertEq(bb.balanceOf(ALICE), postWithdrawal * _s.updatedFactor);
-
-        if (_s.updatedFactor > _s.initialFactor) {
-            assertEq(
-                bb.balanceOf(ALICE),
-                (preWithdrawal * _s.initialFactor) + (_s.deposit * _s.updatedFactor) - (_s.deposit * _s.initialFactor)
-                    - (_s.withdrawal * _s.updatedFactor)
-            );
-        }
-        if (_s.updatedFactor < _s.initialFactor) {
-            assertEq(
-                bb.balanceOf(ALICE),
-                (preWithdrawal * _s.initialFactor) - (_s.deposit * _s.initialFactor) + (_s.deposit * _s.updatedFactor)
-                    - (_s.withdrawal * _s.updatedFactor)
-            );
-        }
+        uint256 maxDelta = 1;
+        /// @dev accuracy within 1 wei
+        assertApproxEqAbs(
+            bb.balanceOf(ALICE),
+            (_s.deposit * _s.updatedFactor / fixedPointPercent) - (_s.withdrawal * _s.updatedFactor / fixedPointPercent),
+            maxDelta
+        );
 
         assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);

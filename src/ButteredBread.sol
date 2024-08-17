@@ -15,6 +15,8 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
  * @custom:coauthor @daopunk
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
+    uint256 public constant FIXED_POINT_PERCENT = 100;
+
     /// @notice Access control for Breadchain sanctioned liquidity pools
     mapping(address lp => bool allowed) public allowlistedLPs;
     /// @notice How much ButteredBread should be minted for a Liquidity Pool token (Butter)
@@ -84,10 +86,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     /**
      * @notice Set LP token scaling factor
      * @param _lp Liquidity Pool token
-     * @param _factor Scaling incentive of LP token
+     * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
      */
     function modifyScalingFactor(address _lp, uint256 _factor) external onlyOwner onlyAllowed(_lp) {
-        if (_factor == 0) revert InvalidValue();
+        if (_factor < 100) revert InvalidValue();
         scalingFactors[_lp] = _factor;
     }
 
@@ -130,7 +132,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         uint256 currentScalingFactor = scalingFactors[_lp];
         _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
 
-        _mint(_account, _amount * currentScalingFactor);
+        _mint(_account, _amount * currentScalingFactor / FIXED_POINT_PERCENT);
         if (this.delegates(_account) == address(0)) _delegate(_account, _account);
 
         emit AddButter(_account, _lp, _amount);
@@ -144,7 +146,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         _syncVotingWeight(_account, _lp);
         _accountToLPData[_account][_lp].balance -= _amount;
 
-        _burn(_account, _amount * scalingFactors[_lp]);
+        _burn(_account, _amount * scalingFactors[_lp] / FIXED_POINT_PERCENT);
         IERC20(_lp).transfer(_account, _amount);
 
         emit RemoveButter(_account, _lp, _amount);
@@ -160,9 +162,15 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
             _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
 
             if (currentScalingFactor > initialScalingFactor) {
-                _mint(_account, (lpBalance * currentScalingFactor) - (lpBalance * initialScalingFactor));
+                _mint(
+                    _account,
+                    (lpBalance * currentScalingFactor - lpBalance * initialScalingFactor) / FIXED_POINT_PERCENT
+                );
             } else {
-                _burn(_account, (lpBalance * initialScalingFactor) - (lpBalance * currentScalingFactor));
+                _burn(
+                    _account,
+                    (lpBalance * initialScalingFactor - lpBalance * currentScalingFactor) / FIXED_POINT_PERCENT
+                );
             }
         }
     }
