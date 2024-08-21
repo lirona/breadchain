@@ -16,6 +16,7 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
     uint256 public constant FIXED_POINT_PERCENT = 100;
+    address public constant ZERO_ADDRESS = address(0);
 
     /// @notice Access control for Breadchain sanctioned liquidity pools
     mapping(address lp => bool allowed) public allowlistedLPs;
@@ -23,6 +24,8 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     mapping(address lp => uint256 factor) public scalingFactors;
     /// @notice Butter balance by account and Liquidity Pool token deposited
     mapping(address account => mapping(address lp => LPData)) internal _accountToLPData;
+
+    address[] internal _accountsList;
 
     modifier onlyAllowed(address _lp) {
         if (allowlistedLPs[_lp] != true) revert NotAllowListed();
@@ -89,8 +92,19 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
      */
     function modifyScalingFactor(address _lp, uint256 _factor) external onlyOwner onlyAllowed(_lp) {
-        if (_factor < 100) revert InvalidValue();
-        scalingFactors[_lp] = _factor;
+        _modifyScalingFactor(_lp, _factor);
+    }
+
+    /**
+     * @notice Set LP token scaling factor and update all accounts scaling factors
+     * @param _lp Liquidity Pool token
+     * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
+     */
+    function modifyScalingFactorAndSyncAccounts(address _lp, uint256 _factor) external onlyOwner onlyAllowed(_lp) {
+        _modifyScalingFactor(_lp, _factor);
+        for (uint256 i = 0; i < _accountsList.length; i++) {
+            _syncVotingWeight(_accountsList[i], _lp);
+        }
     }
 
     /**
@@ -108,9 +122,9 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @param _account Voting accounts
      * @param _lp Liquidity Pool token
      */
-    function syncVotingWeights(address[] calldata _account, address _lp) external onlyAllowed(_lp) {
-        for (uint256 i = 0; i < _account.length; i++) {
-            _syncVotingWeight(_account[i], _lp);
+    function syncVotingWeights(address[] calldata _accounts, address _lp) external onlyAllowed(_lp) {
+        for (uint256 i = 0; i < _accounts.length; i++) {
+            _syncVotingWeight(_accounts[i], _lp);
         }
     }
 
@@ -126,6 +140,14 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /// @notice Deposit LP tokens and mint ButteredBread with corresponding LP scaling factor
     function _deposit(address _account, address _lp, uint256 _amount) internal {
+        if (_amount < 1 ether) revert InsufficientDeposit();
+
+        if (_accountToLPData[_account][ZERO_ADDRESS].balance != 1) {
+            /// @dev truthy value to check if account has ever made a deposit
+            _accountToLPData[_account][ZERO_ADDRESS].balance = 1;
+            _accountsList.push(_account);
+        }
+
         IERC20(_lp).transferFrom(_account, address(this), _amount);
         _accountToLPData[_account][_lp].balance += _amount;
 
@@ -152,6 +174,11 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         emit RemoveButter(_account, _lp, _amount);
     }
 
+    function _modifyScalingFactor(address _lp, uint256 _factor) internal {
+        if (_factor < 100) revert InvalidValue();
+        scalingFactors[_lp] = _factor;
+    }
+
     /// @notice Sync voting weight with scaling factor
     function _syncVotingWeight(address _account, address _lp) internal {
         uint256 currentScalingFactor = scalingFactors[_lp];
@@ -161,16 +188,18 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
             uint256 lpBalance = _accountToLPData[_account][_lp].balance;
             _accountToLPData[_account][_lp].scalingFactor = currentScalingFactor;
 
-            if (currentScalingFactor > initialScalingFactor) {
-                _mint(
-                    _account,
-                    (lpBalance * currentScalingFactor - lpBalance * initialScalingFactor) / FIXED_POINT_PERCENT
-                );
-            } else {
-                _burn(
-                    _account,
-                    (lpBalance * initialScalingFactor - lpBalance * currentScalingFactor) / FIXED_POINT_PERCENT
-                );
+            if (lpBalance > 0) {
+                if (currentScalingFactor > initialScalingFactor) {
+                    _mint(
+                        _account,
+                        (lpBalance * currentScalingFactor - lpBalance * initialScalingFactor) / FIXED_POINT_PERCENT
+                    );
+                } else {
+                    _burn(
+                        _account,
+                        (lpBalance * initialScalingFactor - lpBalance * currentScalingFactor) / FIXED_POINT_PERCENT
+                    );
+                }
             }
         }
     }

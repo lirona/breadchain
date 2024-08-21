@@ -7,6 +7,8 @@ pragma solidity ^0.8.25;
 interface IButteredBread {
     /// @notice Occurs when user does not have sufficient Butter to mint ButteredBread
     error InsufficientFunds();
+    /// @notice Occurs when user deposit is below 1 BREAD ($1 USD) to increase cost of DDOS attack
+    error InsufficientDeposit();
     /// @notice Occurs when an invalid value is attempted to be used in setter functions
     error InvalidValue();
     /// @notice Occurs when attempting a deposit with a non sanctioned LP
