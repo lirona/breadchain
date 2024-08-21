@@ -15,6 +15,8 @@ interface IButteredBread {
     error NotAllowListed();
     /// @notice Occurs when attempting to transfer ButteredBread , a utility token for voting not meant for trading
     error NonTransferable();
+    /// @notice Occurs when dependent variable is not set
+    error Unset();
 
     /// @notice Specifics how much LP Token (Butter) has been added
     event AddButter(address _account, address _lp, uint256 _amount);
@@ -53,8 +55,8 @@ interface IButteredBread {
     /// @notice Returns the factor that determines how much ButteredBread should be minted for a Liquidity Pool token (Butter)
     function scalingFactors(address _lp) external view returns (uint256 _factor);
 
-    /// @notice The amount of LP tokens (Butter) deposited for a an account
-    function accountToLPData(address _account, address _lp) external view returns (LPData memory _lpData);
+    /// @notice The amount of LP tokens (Butter) deposited for an account
+    function accountToLPBalance(address _account, address _lp) external view returns (uint256 _balance);
 
     /// @notice Deposits Butter (LP Tokens) and mints ButteredBread according to the respective LP scaling factor
     function deposit(address _lp, uint256 _amount) external;

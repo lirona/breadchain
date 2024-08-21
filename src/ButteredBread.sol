@@ -46,18 +46,9 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         __ERC20_init(_initData.name, _initData.symbol);
 
         for (uint256 i; i < _initData.liquidityPools.length; ++i) {
-            allowlistedLPs[_initData.liquidityPools[i]] = true;
             scalingFactors[_initData.liquidityPools[i]] = _initData.scalingFactors[i];
+            allowlistedLPs[_initData.liquidityPools[i]] = true;
         }
-    }
-
-    /**
-     * @notice The amount of LP tokens (Butter) deposited for a an account
-     * @param _account Voting account
-     * @param _lp Liquidity Pool token
-     */
-    function accountToLPData(address _account, address _lp) external view returns (LPData memory _lpData) {
-        _lpData = _accountToLPData[_account][_lp];
     }
 
     /**
@@ -91,8 +82,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @notice Allow or deny LP token
      * @param _lp Liquidity Pool token
      * @param _allowed Sanction status of LP token
+     * Note: Must set scaling factor before sanctioning LP token
      */
     function modifyAllowList(address _lp, bool _allowed) external onlyOwner {
+        if (scalingFactors[_lp] < FIXED_POINT_PERCENT) revert Unset();
         allowlistedLPs[_lp] = _allowed;
     }
 
@@ -101,9 +94,9 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @param _lp Liquidity Pool token
      * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
      * @param _sync Automatically sync all accounts voting weights with new factor
-     * Note: avoid DDOS attack setting _sync to false and manually syncing with syncVotingWeights
+     * Note: In case of DDOS, set _sync to false and manually sync with syncVotingWeights(accountsList(), _lp)
      */
-    function modifyScalingFactor(address _lp, uint256 _factor, bool _sync) external onlyOwner onlyAllowed(_lp) {
+    function modifyScalingFactor(address _lp, uint256 _factor, bool _sync) external onlyOwner {
         _modifyScalingFactor(_lp, _factor);
         if (_sync) {
             for (uint256 i = 0; i < accountsList.length; i++) {
@@ -170,7 +163,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     }
 
     function _modifyScalingFactor(address _lp, uint256 _factor) internal {
-        if (_factor < 100) revert InvalidValue();
+        if (_factor < FIXED_POINT_PERCENT) revert InvalidValue();
         scalingFactors[_lp] = _factor;
     }
 

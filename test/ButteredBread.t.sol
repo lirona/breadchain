@@ -14,6 +14,7 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 
 uint256 constant XDAI_FACTOR = 700; // 700% scaling factor; 7X
 uint256 constant TOKEN_AMOUNT = 1000 ether;
+address constant TEST_ADDR = address(0x69);
 
 contract ButteredBreadTest is Test {
     ButteredBread public bb;
@@ -49,7 +50,7 @@ contract ButteredBreadTest is Test {
         vm.label(address(bb), "ButteredBread");
         vm.label(GNOSIS_CURVE_POOL_XDAI_BREAD, "CurveLP_XDAI_BREAD");
 
-        aliceList[0] = ALICE;
+        aliceList.push(ALICE);
     }
 
     function _helperAddLiquidity(address _account, uint256 _amountT0, uint256 _amountT1) internal {
@@ -68,11 +69,6 @@ contract ButteredBreadTest is Test {
         curvePoolXdai.add_liquidity(liquidityAmounts, min_lp_mint);
         curvePoolXdai.approve(address(bb), type(uint256).max);
         vm.stopPrank();
-    }
-
-    function _helperGetLpDeposit(address _account, address _lp) internal view returns (uint256 _butterBalance) {
-        IButteredBread.LPData memory _lpData = bb.accountToLPData(_account, _lp);
-        _butterBalance = _lpData.balance;
     }
 }
 
@@ -111,19 +107,28 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
     }
 
     function testAccessControlForOwner() public {
-        bb.modifyAllowList(address(0x69), true);
-        assertTrue(bb.allowlistedLPs(address(0x69)));
+        bb.modifyScalingFactor(TEST_ADDR, XDAI_FACTOR, false);
+        bb.modifyAllowList(TEST_ADDR, true);
+        assertTrue(bb.allowlistedLPs(TEST_ADDR));
     }
 
     function testAccessControlForOwnerRevert() public {
+        bb.modifyScalingFactor(TEST_ADDR, XDAI_FACTOR, false);
+
         vm.prank(ALICE);
         vm.expectRevert();
-        bb.modifyAllowList(address(0x69), true);
-        assertFalse(bb.allowlistedLPs(address(0x69)));
+        bb.modifyAllowList(TEST_ADDR, true);
+        assertFalse(bb.allowlistedLPs(TEST_ADDR));
+    }
+
+    function testAccessControlForOwnerRevertUnset() public {
+        vm.expectRevert();
+        bb.modifyAllowList(TEST_ADDR, true);
+        assertFalse(bb.allowlistedLPs(TEST_ADDR));
     }
 
     function testDeposit() public {
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
         assertEq(curvePoolXdai.balanceOf(address(bb)), 0);
 
         uint256 depositAmount = curvePoolXdai.balanceOf(ALICE);
@@ -131,7 +136,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
     }
 
@@ -141,14 +146,14 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
 
         vm.prank(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), depositAmount);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
         assertEq(curvePoolXdai.balanceOf(address(bb)), 0);
     }
 
@@ -158,7 +163,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
 
         vm.prank(BOBBY);
@@ -172,7 +177,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), depositAmount);
         assertEq(curvePoolXdai.balanceOf(address(bb)), depositAmount);
 
         vm.prank(ALICE);
@@ -295,7 +300,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.initialFactor, false);
 
         assertEq(bb.scalingFactors(GNOSIS_CURVE_POOL_XDAI_BREAD), _s.initialFactor);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.deposit);
         _;
     }
@@ -305,7 +310,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit);
 
         assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor / fixedPointPercent);
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
     }
 
@@ -313,14 +318,14 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         vm.startPrank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit);
 
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
 
         uint256 preWithdrawBalance = bb.balanceOf(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.withdrawal);
 
         assertEq(bb.balanceOf(ALICE), preWithdrawBalance - (_s.withdrawal * _s.initialFactor / fixedPointPercent));
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);
     }
 
@@ -328,7 +333,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         vm.prank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit);
 
-        uint256 initDeposit = _helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
+        uint256 initDeposit = bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
         assertEq(initDeposit, _s.deposit);
         assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor / fixedPointPercent);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
@@ -346,7 +351,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
             maxDelta
         );
 
-        assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit - _s.withdrawal);
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);
     }
 
