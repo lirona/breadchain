@@ -25,7 +25,8 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     /// @notice Butter balance by account and Liquidity Pool token deposited
     mapping(address account => mapping(address lp => LPData)) internal _accountToLPData;
 
-    address[] internal _accountsList;
+    /// @notice List of accounts that have deposited 1 or more LP token types
+    address[] public accountsList;
 
     modifier onlyAllowed(address _lp) {
         if (allowlistedLPs[_lp] != true) revert NotAllowListed();
@@ -60,6 +61,15 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     }
 
     /**
+     * @notice The amount of LP tokens (Butter) deposited for a an account
+     * @param _account Voting account
+     * @param _lp Liquidity Pool token
+     */
+    function accountToLPBalance(address _account, address _lp) external view returns (uint256 _lpBalance) {
+        _lpBalance = _accountToLPData[_account][_lp].balance;
+    }
+
+    /**
      * @notice Deposit LP tokens
      * @param _lp Liquidity Pool token
      * @param _amount Value of LP token
@@ -90,36 +100,21 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @notice Set LP token scaling factor
      * @param _lp Liquidity Pool token
      * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
+     * @param _sync Automatically sync all accounts voting weights with new factor
+     * Note: avoid DDOS attack setting _sync to false and manually syncing with syncVotingWeights
      */
-    function modifyScalingFactor(address _lp, uint256 _factor) external onlyOwner onlyAllowed(_lp) {
+    function modifyScalingFactor(address _lp, uint256 _factor, bool _sync) external onlyOwner onlyAllowed(_lp) {
         _modifyScalingFactor(_lp, _factor);
-    }
-
-    /**
-     * @notice Set LP token scaling factor and update all accounts scaling factors
-     * @param _lp Liquidity Pool token
-     * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
-     */
-    function modifyScalingFactorAndSyncAccounts(address _lp, uint256 _factor) external onlyOwner onlyAllowed(_lp) {
-        _modifyScalingFactor(_lp, _factor);
-        for (uint256 i = 0; i < _accountsList.length; i++) {
-            _syncVotingWeight(_accountsList[i], _lp);
+        if (_sync) {
+            for (uint256 i = 0; i < accountsList.length; i++) {
+                _syncVotingWeight(accountsList[i], _lp);
+            }
         }
     }
 
     /**
-     * @notice Sync voting weight with LP scaling factor
-     * Note: Can be called from `castVote` on governance contract to update voting weight
-     * @param _account Voting account
-     * @param _lp Liquidity Pool token
-     */
-    function syncVotingWeight(address _account, address _lp) external onlyAllowed(_lp) {
-        _syncVotingWeight(_account, _lp);
-    }
-
-    /**
-     * @notice Sync multiple voting weights with single LP scaling factor
-     * @param _account Voting accounts
+     * @notice Manually sync list of accounts with single LP scaling factor
+     * @param _accounts List of voting accounts
      * @param _lp Liquidity Pool token
      */
     function syncVotingWeights(address[] calldata _accounts, address _lp) external onlyAllowed(_lp) {
@@ -145,7 +140,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         if (_accountToLPData[_account][ZERO_ADDRESS].balance != 1) {
             /// @dev truthy value to check if account has ever made a deposit
             _accountToLPData[_account][ZERO_ADDRESS].balance = 1;
-            _accountsList.push(_account);
+            accountsList.push(_account);
         }
 
         IERC20(_lp).transferFrom(_account, address(this), _amount);

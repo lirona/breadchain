@@ -66,10 +66,7 @@ interface IButteredBread {
     function modifyAllowList(address _lp, bool _allowed) external;
 
     /// @notice Modifies how much ButteredBread should be minted for a Liquidity Pool token (Butter)
-    function modifyScalingFactor(address _lp, uint256 _factor) external;
-
-    /// @notice Sync voting weight with LP scaling factor
-    function syncVotingWeight(address _account, address _lp) external;
+    function modifyScalingFactor(address _lp, uint256 _factor, bool _sync) external;
 
     /// @notice Sync multiple voting weights with single LP scaling factor
     function syncVotingWeights(address[] calldata _account, address _lp) external;

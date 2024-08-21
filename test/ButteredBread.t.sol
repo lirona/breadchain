@@ -19,7 +19,8 @@ contract ButteredBreadTest is Test {
     ButteredBread public bb;
     ICurveStableSwap public curvePoolXdai;
 
-    uint256 fixedPointPercent;
+    uint256 public fixedPointPercent;
+    address[] public aliceList;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("gnosis"));
@@ -47,6 +48,8 @@ contract ButteredBreadTest is Test {
 
         vm.label(address(bb), "ButteredBread");
         vm.label(GNOSIS_CURVE_POOL_XDAI_BREAD, "CurveLP_XDAI_BREAD");
+
+        aliceList[0] = ALICE;
     }
 
     function _helperAddLiquidity(address _account, uint256 _amountT0, uint256 _amountT1) internal {
@@ -212,8 +215,8 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
 
         assertEq(bb.balanceOf(ALICE), scaledBurnAmount);
-        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, 1000);
-        bb.syncVotingWeight(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
+        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, 1000, false);
+        bb.syncVotingWeights(aliceList, GNOSIS_CURVE_POOL_XDAI_BREAD);
 
         vm.prank(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, depositAmount);
@@ -230,8 +233,8 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
         assertEq(bb.balanceOf(ALICE), scaledBurnAmount);
 
         uint256 updatedScalingFactor = 1000;
-        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, updatedScalingFactor);
-        bb.syncVotingWeight(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD);
+        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, updatedScalingFactor, false);
+        bb.syncVotingWeights(aliceList, GNOSIS_CURVE_POOL_XDAI_BREAD);
 
         uint256 quaterWithdraw = depositAmount / 4;
         vm.prank(ALICE);
@@ -289,7 +292,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         vm.prank(ALICE);
         curvePoolXdai.approve(address(bb), _s.deposit);
 
-        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.initialFactor);
+        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.initialFactor, false);
 
         assertEq(bb.scalingFactors(GNOSIS_CURVE_POOL_XDAI_BREAD), _s.initialFactor);
         assertEq(_helperGetLpDeposit(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), 0);
@@ -330,7 +333,7 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         assertEq(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor / fixedPointPercent);
         assertEq(curvePoolXdai.balanceOf(ALICE), 0);
 
-        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.updatedFactor);
+        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.updatedFactor, false);
 
         vm.prank(ALICE);
         bb.withdraw(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.withdrawal);
@@ -357,6 +360,6 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
     function testAccessControlOnNonExistent(address _contract) public {
         vm.assume(_contract != GNOSIS_CURVE_POOL_XDAI_BREAD);
         vm.expectRevert();
-        bb.modifyScalingFactor(_contract, 69);
+        bb.modifyScalingFactor(_contract, 69, false);
     }
 }
