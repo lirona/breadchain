@@ -355,6 +355,44 @@ contract ButteredBreadTest_Fuzz is ButteredBreadTest {
         assertEq(curvePoolXdai.balanceOf(ALICE), _s.withdrawal);
     }
 
+    function testModifyScalingFactorAndSync(Scenario memory _s) public happyPath(_s) {
+        vm.assume(_s.deposit % 2 == 0);
+
+        vm.startPrank(ALICE);
+        bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit / 2);
+        /// @dev deposit twice to check non-duplication of depositors array
+        bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.deposit / 2);
+        vm.stopPrank();
+
+        uint256 doubleDeposit = _s.deposit * 2;
+        deal(GNOSIS_CURVE_POOL_XDAI_BREAD, BOBBY, doubleDeposit);
+
+        vm.startPrank(BOBBY);
+        curvePoolXdai.approve(address(bb), doubleDeposit);
+        bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, doubleDeposit);
+        vm.stopPrank();
+
+        address[] memory depositors;
+        depositors = bb.listDepositors();
+        assertEq(depositors.length, 2);
+        assertEq(depositors[0], ALICE);
+        assertEq(depositors[1], BOBBY);
+
+        /// @dev accuracy within 1 or 2 wei (due to fixed point division in test setup)
+        uint256 maxDelta = 1;
+        uint256 maxDeltaDouble = 2;
+        assertApproxEqAbs(bb.balanceOf(ALICE), _s.deposit * _s.initialFactor / fixedPointPercent, maxDeltaDouble);
+        assertEq(bb.accountToLPBalance(ALICE, GNOSIS_CURVE_POOL_XDAI_BREAD), _s.deposit);
+        assertEq(bb.balanceOf(BOBBY), doubleDeposit * _s.initialFactor / fixedPointPercent);
+        assertEq(bb.accountToLPBalance(BOBBY, GNOSIS_CURVE_POOL_XDAI_BREAD), doubleDeposit);
+
+        bb.modifyScalingFactor(GNOSIS_CURVE_POOL_XDAI_BREAD, _s.updatedFactor, true);
+
+        /// @dev accuracy within 1 wei
+        assertApproxEqAbs(bb.balanceOf(ALICE), _s.deposit * _s.updatedFactor / fixedPointPercent, maxDeltaDouble);
+        assertApproxEqAbs(bb.balanceOf(BOBBY), doubleDeposit * _s.updatedFactor / fixedPointPercent, maxDelta);
+    }
+
     function testAccessControlForOwner(address _attacker, address _contract, bool _allow) public {
         vm.assume(_attacker != address(this));
         vm.prank(_attacker);
