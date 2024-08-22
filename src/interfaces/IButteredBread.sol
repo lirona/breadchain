@@ -51,7 +51,7 @@ interface IButteredBread {
     function totalDepositors() external view returns (uint256 _totalDepositors);
 
     /// @notice View list depositors
-    function listDepositors() external view returns (address[] memory _depositors);
+    function listDepositors() external view returns (address[] memory _depositorList);
 
     /// @notice Returns whether a given liquidity pool is Breadchain sanctioned or not
     function allowlistedLPs(address _lp) external view returns (bool _allowed);
