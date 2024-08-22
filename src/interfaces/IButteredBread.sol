@@ -47,12 +47,6 @@ interface IButteredBread {
     /// @notice initialize contract as TransparentUpgradeableProxy
     function initialize(InitData calldata _initData) external;
 
-    /// @notice View total number of depositors
-    function totalDepositors() external view returns (uint256 _totalDepositors);
-
-    /// @notice View list depositors
-    function listDepositors() external view returns (address[] memory _depositorList);
-
     /// @notice Returns whether a given liquidity pool is Breadchain sanctioned or not
     function allowlistedLPs(address _lp) external view returns (bool _allowed);
 
@@ -72,8 +66,5 @@ interface IButteredBread {
     function modifyAllowList(address _lp, bool _allowed) external;
 
     /// @notice Modifies how much ButteredBread should be minted for a Liquidity Pool token (Butter)
-    function modifyScalingFactor(address _lp, uint256 _factor, bool _sync) external;
-
-    /// @notice Sync multiple voting weights with single LP scaling factor
-    function syncVotingWeights(address[] calldata _account, address _lp) external;
+    function modifyScalingFactor(address _lp, uint256 _factor, address[] calldata holders) external;
 }

@@ -25,9 +25,6 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     /// @notice Butter balance by account and Liquidity Pool token deposited
     mapping(address account => mapping(address lp => LPData)) internal _accountToLPData;
 
-    /// @notice List of accounts that have deposited 1 or more LP token types
-    address[] internal _depositors;
-
     modifier onlyAllowed(address _lp) {
         if (allowlistedLPs[_lp] != true) revert NotAllowListed();
         _;
@@ -49,16 +46,6 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
             scalingFactors[_initData.liquidityPools[i]] = _initData.scalingFactors[i];
             allowlistedLPs[_initData.liquidityPools[i]] = true;
         }
-    }
-
-    /// @return _totalDepositors Total number of depositors
-    function totalDepositors() external view returns (uint256 _totalDepositors) {
-        _totalDepositors = _depositors.length;
-    }
-
-    /// @return _depositorList List of depositors
-    function listDepositors() external view returns (address[] memory _depositorList) {
-        _depositorList = _depositors;
     }
 
     /**
@@ -103,28 +90,11 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @notice Set LP token scaling factor
      * @param _lp Liquidity Pool token
      * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
-     * @param _sync Automatically sync all accounts voting weights with new factor
-     * Note: In case of DDOS, set _sync to false and manually sync with syncVotingWeights(_depositors(), _lp)
      */
-    function modifyScalingFactor(address _lp, uint256 _factor, bool _sync) external onlyOwner {
-        _modifyScalingFactor(_lp, _factor);
-        if (_sync) {
-            for (uint256 i = 0; i < _depositors.length; i++) {
-                _syncVotingWeight(_depositors[i], _lp);
-            }
-        }
+    function modifyScalingFactor(address _lp, uint256 _factor, address[] calldata holders) external onlyOwner {
+        _modifyScalingFactor(_lp, _factor, holders);
     }
 
-    /**
-     * @notice Manually sync list of accounts with single LP scaling factor
-     * @param _accounts List of voting accounts
-     * @param _lp Liquidity Pool token
-     */
-    function syncVotingWeights(address[] calldata _accounts, address _lp) external onlyAllowed(_lp) {
-        for (uint256 i = 0; i < _accounts.length; i++) {
-            _syncVotingWeight(_accounts[i], _lp);
-        }
-    }
 
     /// @notice ButteredBread tokens are non-transferable
     function transfer(address, uint256) public virtual override returns (bool) {
@@ -138,12 +108,6 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /// @notice Deposit LP tokens and mint ButteredBread with corresponding LP scaling factor
     function _deposit(address _account, address _lp, uint256 _amount) internal {
-        if (_accountToLPData[_account][ZERO_ADDRESS].balance != 1) {
-            /// @dev truthy value to check if account has ever made a deposit
-            _accountToLPData[_account][ZERO_ADDRESS].balance = 1;
-            _depositors.push(_account);
-        }
-
         IERC20(_lp).transferFrom(_account, address(this), _amount);
         _accountToLPData[_account][_lp].balance += _amount;
 
@@ -161,7 +125,6 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         uint256 beforeBalance = _accountToLPData[_account][_lp].balance;
         if (_amount > beforeBalance) revert InsufficientFunds();
 
-        _syncVotingWeight(_account, _lp);
         _accountToLPData[_account][_lp].balance -= _amount;
 
         _burn(_account, _amount * scalingFactors[_lp] / FIXED_POINT_PERCENT);
@@ -170,9 +133,13 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         emit RemoveButter(_account, _lp, _amount);
     }
 
-    function _modifyScalingFactor(address _lp, uint256 _factor) internal {
+    function _modifyScalingFactor(address _lp, uint256 _factor, address[] calldata holders) internal {
         if (_factor < FIXED_POINT_PERCENT) revert InvalidValue();
+
         scalingFactors[_lp] = _factor;
+        for (uint256 i = 0; i < holders.length; i++) {
+            _syncVotingWeight(holders[i], _lp);
+        }
     }
 
     /// @notice Sync voting weight with scaling factor
