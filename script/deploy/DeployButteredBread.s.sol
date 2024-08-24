@@ -4,8 +4,7 @@ import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 import "forge-std/console.sol";
 import "openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ButteredBread} from "src/ButteredBread.sol";
-import {IButteredBread} from "src/interfaces/IButteredBread.sol";
+import {ButteredBread, IButteredBread} from "src/ButteredBread.sol";
 
 contract DeployButteredBread is Script {
     string public deployConfigPath = string(bytes("./script/deploy/config/deployBB.json"));

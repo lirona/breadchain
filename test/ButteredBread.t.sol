@@ -9,8 +9,7 @@ import {TransparentUpgradeableProxy} from
     "openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ICurveStableSwap} from "src/interfaces/ICurveStableSwap.sol";
-import {ButteredBread} from "src/ButteredBread.sol";
-import {IButteredBread} from "src/interfaces/IButteredBread.sol";
+import {ButteredBread, IButteredBread} from "src/ButteredBread.sol";
 
 uint256 constant XDAI_FACTOR = 700; // 700% scaling factor; 7X
 uint256 constant TOKEN_AMOUNT = 1000 ether;
