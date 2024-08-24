@@ -5,12 +5,11 @@ import "forge-std/StdJson.sol";
 import "forge-std/console.sol";
 import "openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import "forge-std/StdJson.sol";
 
 import {YieldDistributor} from "../../src/YieldDistributor.sol";
 
 contract DeployYieldDistributor is Script {
-    string public deployConfigPath = string(bytes("./script/deploy/config/deploy.json"));
+    string public deployConfigPath = string(bytes("./script/deploy/config/deployYD.json"));
     string config_data = vm.readFile(deployConfigPath);
     address _bread = stdJson.readAddress(config_data, "._bread");
     uint256 _minRequiredVotingPower = stdJson.readUint(config_data, "._minRequiredVotingPower");
