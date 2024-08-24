@@ -120,9 +120,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /// @notice Withdraw LP tokens and burn ButteredBread with corresponding LP scaling factor
     function _withdraw(address _account, address _lp, uint256 _amount) internal {
-        uint256 beforeBalance = _accountToLPData[_account][_lp].balance;
-        if (_amount > beforeBalance) revert InsufficientFunds();
+        if (_amount > _accountToLPData[_account][_lp].balance) revert InsufficientFunds();
 
+        /// @dev ensure proper accounting in case of admin error in `modifyScalingFactor` where not all holders are updated
+        _syncVotingWeight(_account, _lp);
         _accountToLPData[_account][_lp].balance -= _amount;
 
         _burn(_account, _amount * scalingFactors[_lp] / FIXED_POINT_PERCENT);
