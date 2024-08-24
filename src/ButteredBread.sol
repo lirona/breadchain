@@ -16,7 +16,6 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
     uint256 public constant FIXED_POINT_PERCENT = 100;
-    address public constant ZERO_ADDRESS = address(0);
 
     /// @notice Access control for Breadchain sanctioned liquidity pools
     mapping(address lp => bool allowed) public allowlistedLPs;
@@ -94,7 +93,6 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     function modifyScalingFactor(address _lp, uint256 _factor, address[] calldata holders) external onlyOwner {
         _modifyScalingFactor(_lp, _factor, holders);
     }
-
 
     /// @notice ButteredBread tokens are non-transferable
     function transfer(address, uint256) public virtual override returns (bool) {
