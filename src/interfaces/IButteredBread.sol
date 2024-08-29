@@ -9,22 +9,22 @@ interface IButteredBread {
     error InsufficientFunds();
     /// @notice Occurs when an invalid value is attempted to be used in setter functions
     error InvalidValue();
-    /// @notice Occurs when attempting a deposit with a non sanctioned LP
+    /// @notice Occurs when attempting a deposit with a non-sanctioned LP
     error NotAllowListed();
-    /// @notice Occurs when attempting to transfer ButteredBread , a utility token for voting not meant for trading
+    /// @notice Occurs when attempting to transfer soulbound ButteredBread
     error NonTransferable();
     /// @notice Occurs when dependent variable is not set
     error Unset();
 
-    /// @notice Specifics how much LP Token (Butter) has been added
+    /// @notice Specifies how much LP Token (Butter) has been added
     event AddButter(address _account, address _lp, uint256 _amount);
-    /// @notice Specifics how much LP Token (Butter) has been removed
+    /// @notice Specifies how much LP Token (Butter) has been removed
     event RemoveButter(address _account, address _lp, uint256 _amount);
 
     /**
      * @param liquidityPools sanctioned LPs
      * @param scalingFactors scaling factor on mint per sanctioned LP
-     * Note: each scaling factor is a fixed point percent (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
+     * @dev each scaling factor is a fixed point percent (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
      * @param name ERC20 token name
      * @param symbol ERC20 token symbol
      */
@@ -36,7 +36,7 @@ interface IButteredBread {
     }
 
     /**
-     * @param balance Value of deposited Butter (LP tokens)
+     * @param balance Value of deposited LP tokens (Butter)
      * @param scalingFactor At the time of deposit or updated with `syncVotingWeight` function
      */
     struct LPData {
@@ -56,7 +56,7 @@ interface IButteredBread {
     /// @notice The amount of LP tokens (Butter) deposited for an account
     function accountToLPBalance(address _account, address _lp) external view returns (uint256 _balance);
 
-    /// @notice Deposits Butter (LP Tokens) and mints ButteredBread according to the respective LP scaling factor
+    /// @notice Deposits LP tokens (Butter) and mints ButteredBread according to the respective LP scaling factor
     function deposit(address _lp, uint256 _amount) external;
 
     /// @notice Withdraws some amount of Butter (LP token) and burns an amount of the user's ButteredBread according to the respective scaling factor

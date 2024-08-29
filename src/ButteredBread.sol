@@ -9,10 +9,11 @@ import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 
 /**
  * @title Breadchain Buttered Bread
- * @notice Deposit Butter (LP tokens) to earn scaling rewards
+ * @notice Deposit LP tokens (Butter) to earn scaling rewards
  * @author Breadchain Collective
  * @custom:coauthor @RonTuretzky
  * @custom:coauthor @daopunk
+ * @custom:coauthor @bagelface
  */
 contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBread {
     uint256 public constant FIXED_POINT_PERCENT = 100;
@@ -25,7 +26,7 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
     mapping(address account => mapping(address lp => LPData)) internal _accountToLPData;
 
     modifier onlyAllowed(address _lp) {
-        if (allowlistedLPs[_lp] != true) revert NotAllowListed();
+        if (!allowlistedLPs[_lp]) revert NotAllowListed();
         _;
     }
 
@@ -76,9 +77,9 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
 
     /**
      * @notice Allow or deny LP token
+     * @dev Must set scaling factor before sanctioning LP token
      * @param _lp Liquidity Pool token
      * @param _allowed Sanction status of LP token
-     * Note: Must set scaling factor before sanctioning LP token
      */
     function modifyAllowList(address _lp, bool _allowed) external onlyOwner {
         if (scalingFactors[_lp] < FIXED_POINT_PERCENT) revert Unset();
@@ -89,9 +90,10 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
      * @notice Set LP token scaling factor
      * @param _lp Liquidity Pool token
      * @param _factor Scaling percentage incentive of LP token (e.g. 100 = 1X, 150 = 1.5X, 1000 = 10X)
+     * @param _holders List of accounts to update with new scaling factor
      */
-    function modifyScalingFactor(address _lp, uint256 _factor, address[] calldata holders) external onlyOwner {
-        _modifyScalingFactor(_lp, _factor, holders);
+    function modifyScalingFactor(address _lp, uint256 _factor, address[] calldata _holders) external onlyOwner {
+        _modifyScalingFactor(_lp, _factor, _holders);
     }
 
     /// @notice ButteredBread tokens are non-transferable
@@ -132,12 +134,12 @@ contract ButteredBread is ERC20VotesUpgradeable, OwnableUpgradeable, IButteredBr
         emit RemoveButter(_account, _lp, _amount);
     }
 
-    function _modifyScalingFactor(address _lp, uint256 _factor, address[] calldata holders) internal {
+    function _modifyScalingFactor(address _lp, uint256 _factor, address[] calldata _holders) internal {
         if (_factor < FIXED_POINT_PERCENT) revert InvalidValue();
 
         scalingFactors[_lp] = _factor;
-        for (uint256 i = 0; i < holders.length; i++) {
-            _syncVotingWeight(holders[i], _lp);
+        for (uint256 i = 0; i < _holders.length; i++) {
+            _syncVotingWeight(_holders[i], _lp);
         }
     }
 

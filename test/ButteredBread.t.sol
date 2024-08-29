@@ -250,6 +250,7 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
     }
 
     function testTransferRevertFuzzy(address _receiver) public {
+        vm.assume(_receiver != address(0));
         vm.startPrank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, curvePoolXdai.balanceOf(ALICE));
 
@@ -261,6 +262,8 @@ contract ButteredBreadTest_Unit is ButteredBreadTest {
     }
 
     function testTransferFromRevertFuzzy(address _operator, address _receiver) public {
+        vm.assume(_operator != address(0));
+        vm.assume(_receiver != address(0));
         vm.startPrank(ALICE);
         bb.deposit(GNOSIS_CURVE_POOL_XDAI_BREAD, curvePoolXdai.balanceOf(ALICE));
 
