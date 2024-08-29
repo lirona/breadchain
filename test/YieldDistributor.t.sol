@@ -53,6 +53,8 @@ contract YieldDistributorTest is Test {
     uint256 _minRequiredVotingPower = stdJson.readUint(config_data, "._minRequiredVotingPower");
 
     function setUp() public {
+        vm.createSelectFork(vm.rpcUrl('gnosis')); 
+
         YieldDistributorTestWrapper yieldDistributorImplementation = new YieldDistributorTestWrapper();
         address[] memory projects1 = new address[](1);
         projects1[0] = address(this);
