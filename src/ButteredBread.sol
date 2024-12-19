@@ -92,6 +92,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
     /**
      * @notice Allow or deny LP token
      * @dev Must set scaling factor before sanctioning LP token
+     * @dev WARNING: When adding a new LP token, ensure that it has 18 decimals
      * @param _lp Liquidity Pool token
      * @param _allowed Sanction status of LP token
      */
