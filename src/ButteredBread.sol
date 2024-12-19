@@ -75,6 +75,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
      * @param _amount Value of LP token
      */
     function deposit(address _lp, uint256 _amount) external onlyAllowed(_lp) {
+        require(_amount != 0, "Amount must be greater than 0");
         _deposit(msg.sender, _lp, _amount);
     }
 
@@ -84,6 +85,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
      * @param _amount Value of LP token
      */
     function withdraw(address _lp, uint256 _amount) external onlyAllowed(_lp) {
+        require(_amount != 0, "Amount must be greater than 0");
         _withdraw(msg.sender, _lp, _amount);
     }
 
