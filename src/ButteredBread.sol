@@ -75,7 +75,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
      * @param _amount Value of LP token
      */
     function deposit(address _lp, uint256 _amount) external onlyAllowed(_lp) {
-        require(_amount != 0, "Amount must be greater than 0");
+        if (_amount == 0) revert AmountZero();
         _deposit(msg.sender, _lp, _amount);
     }
 
@@ -85,7 +85,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
      * @param _amount Value of LP token
      */
     function withdraw(address _lp, uint256 _amount) external onlyAllowed(_lp) {
-        require(_amount != 0, "Amount must be greater than 0");
+        if (_amount == 0) revert AmountZero();
         _withdraw(msg.sender, _lp, _amount);
     }
 
@@ -143,7 +143,9 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
         _accountToLPData[_account][_lp].balance += _amount;
         
         _mint(_account, _amount * scalingFactors[_lp] / FIXED_POINT_PERCENT);
-        require(IERC20(_lp).transferFrom(_account, address(this), _amount), "Transfer failed");
+        
+        bool success = IERC20(_lp).transferFrom(_account, address(this), _amount);
+        if (!success) revert TransferFailed();
 
         emit ButterAdded(_account, _lp, _amount);
     }
@@ -158,7 +160,8 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
         _accountToLPData[_account][_lp].balance -= _amount;
 
         _burn(_account, _amount * scalingFactors[_lp] / FIXED_POINT_PERCENT);
-        require(IERC20(_lp).transfer(_account, _amount), "Transfer failed");
+        bool success = IERC20(_lp).transfer(_account, _amount);
+        if (!success) revert TransferFailed();
 
         emit ButterRemoved(_account, _lp, _amount);
     }
