@@ -70,7 +70,8 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
     }
 
     /**
-     * @notice Deposit LP tokens
+     * @notice Deposit LP tokens and mint ButteredBread
+     *  NOTE: Additional ButteredBread can be minted/burned due to scaling factor changes
      * @param _lp Liquidity Pool token
      * @param _amount Value of LP token
      */
@@ -80,7 +81,8 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
     }
 
     /**
-     * @notice Withdraw LP tokens
+     * @notice Withdraw LP tokens and burn ButteredBread
+     *  NOTE: Additional ButteredBread can be minted/burned due to scaling factor changes
      * @param _lp Liquidity Pool token
      * @param _amount Value of LP token
      */
