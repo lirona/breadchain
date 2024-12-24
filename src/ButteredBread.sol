@@ -5,6 +5,8 @@ import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/a
 import {ERC20VotesUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuardUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 
 import {IButteredBread} from "src/interfaces/IButteredBread.sol";
 import {IERC20Votes} from "src/interfaces/IERC20Votes.sol";
@@ -17,7 +19,7 @@ import {IERC20Votes} from "src/interfaces/IERC20Votes.sol";
  * @custom:coauthor @daopunk
  * @custom:coauthor @bagelface
  */
-contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradeable {
+contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Value used for calculating the precision of scaling factors
     uint256 public constant FIXED_POINT_PERCENT = 100;
     /// @notice `IERC20Votes` contract used for powering `ButteredBread` voting
@@ -47,6 +49,8 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
 
         __Ownable_init(msg.sender);
         __ERC20_init(_initData.name, _initData.symbol);
+        __ERC20Votes_init();
+        __ReentrancyGuard_init();
 
         for (uint256 i; i < _initData.liquidityPools.length; ++i) {
             scalingFactors[_initData.liquidityPools[i]] = _initData.scalingFactors[i];
@@ -75,7 +79,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
      * @param _lp Liquidity Pool token
      * @param _amount Value of LP token
      */
-    function deposit(address _lp, uint256 _amount) external onlyAllowed(_lp) {
+    function deposit(address _lp, uint256 _amount) external onlyAllowed(_lp) nonReentrant {
         if (_amount == 0) revert AmountZero();
         _deposit(msg.sender, _lp, _amount);
     }
