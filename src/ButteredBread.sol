@@ -90,7 +90,7 @@ contract ButteredBread is IButteredBread, ERC20VotesUpgradeable, OwnableUpgradea
      * @param _lp Liquidity Pool token
      * @param _amount Value of LP token
      */
-    function withdraw(address _lp, uint256 _amount) external onlyAllowed(_lp) {
+    function withdraw(address _lp, uint256 _amount) external onlyAllowed(_lp) nonReentrant {
         if (_amount == 0) revert AmountZero();
         _withdraw(msg.sender, _lp, _amount);
     }
